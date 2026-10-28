@@ -60,10 +60,13 @@ def test_track_writer_carries_partial_groups_between_callbacks(tmp_path):
 
 
 def test_session_folder_and_round_trip(tmp_path):
-    session = MeetingSession.create(tmp_path, "Acme Q4 review!", "client feedback", now=datetime(2026, 10, 28, 15, 30, 5))
+    session = MeetingSession.create(
+        tmp_path, "Acme Q4 review!", "client feedback", attendees=["rahul@acme.com"], now=datetime(2026, 10, 28, 15, 30, 5)
+    )
     assert session.folder.name == "2026-10-28_153005_acme-q4-review"
     info = session.load_info()
     assert info.title == "Acme Q4 review!" and info.meeting_type == "client feedback"
+    assert info.attendees == ["rahul@acme.com"]
 
     session.save_anchors("[00:00:05] ! budget approved\n")
     assert session.load_anchors().strip() == "[00:00:05] ! budget approved"

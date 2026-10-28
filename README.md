@@ -81,6 +81,32 @@ transcript and report. Closing the window while recording keeps recording from t
 Speech-to-text uses the GPU when NVIDIA's cuBLAS and cuDNN libraries are installed, and falls
 back to the CPU otherwise.
 
+## Automations (no code)
+The **Automations** page lets you build rules from dropdowns. Each rule is one sentence:
+
+> **When** a meeting is processed · **only if** the type is *client feedback* and there are
+> external attendees · **then** draft an email to the external attendees · **how:** wait for my approval
+
+| Part | Options |
+|---|---|
+| When | A meeting is processed · an action item is found · a note conflicts with the meeting |
+| Only if | Meeting type, title, external attendees, conflicts, feature requests, number of action items, action item owner or text |
+| Then | Draft an email from a template · create tasks · show a notification · save the summary to a folder |
+| How | Run automatically · wait for my approval · only tell me what it would do |
+
+- **Templates:** five ready-made rules, such as a client recap email or tasks from every meeting.
+- **Test run:** runs a rule against a past meeting and shows exactly what it would do, without
+  sending, saving or creating anything.
+- **Approvals inbox:** items from "wait for my approval" rules. Approved emails are saved as unsent
+  `.eml` drafts that Outlook or Windows Mail opens ready to send.
+- **Internal notes stay internal:** when any recipient is outside your company domain (set in
+  Settings), summary lines that came from `internal:` notes and the conflicts list are removed.
+- **Safety:** saving an automatic rule that emails outsiders asks for confirmation, and automatic
+  rules pause after 20 runs in an hour. Every run is recorded in the Activity tab.
+
+Rules are stored as JSON in a local SQLite database (`assistant.db` in the meetings folder),
+so the editor is a form over data rather than generated code.
+
 ## Tests
 ```bash
 pytest
@@ -91,7 +117,7 @@ The tests use a fake provider, so they run without Ollama.
 - [x] Core pipeline: summary, coverage guarantee, conflict detection
 - [x] CLI
 - [x] Desktop app: mic and call-audio recording, tray icon, global note hotkey, meeting folders
-- [ ] Automation builder: no-code rules (trigger, conditions, actions, approval mode) with a test run
+- [x] Automation builder: no-code rules, templates, test run, approvals inbox, activity log, tasks
 - [ ] Notion sync: meeting pages and Tasks database
 - [ ] Feature-request detection and deduplication into a Notion tracker
 - [ ] Follow-up email drafts (internal notes filtered out) through Gmail, with approval

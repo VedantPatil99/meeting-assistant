@@ -6,6 +6,7 @@ Run with:  python -m meeting_assistant.app.main   (or the meeting-assistant-app 
 from __future__ import annotations
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, QUrl, Signal
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..anchors import parse_anchors
+from ..automations import Engine, Prefs, Store, events_from_report
 from ..config import Settings
 from ..llm import LLMError, OllamaProvider
 from ..models import format_ts
@@ -42,6 +44,7 @@ from ..recorder import Recorder
 from ..report import render_markdown
 from ..session import MeetingInfo, MeetingSession
 from ..transcript import parse_transcript
+from .automations_page import AutomationsPage
 from .hotkeys import MOD_CONTROL, MOD_SHIFT, VK_SPACE, HotkeyThread
 from .quick_anchor import QuickAnchor
 
@@ -72,7 +75,7 @@ class ProcessWorker(QObject):
     """Transcribes the recording if needed, then runs the pipeline, off the UI thread."""
 
     progress = Signal(str)
-    finished = Signal(str)
+    finished = Signal(object)  # MeetingReport
     failed = Signal(str)
 
     def __init__(self, settings: Settings, anchors_text: str, title: str, meeting_type: str,
@@ -99,10 +102,7 @@ class ProcessWorker(QObject):
                 meeting_type=self.meeting_type,
                 on_progress=self.progress.emit,
             )
-            if self.session:
-                self.finished.emit(self.session.save_report(report))
-            else:
-                self.finished.emit(render_markdown(report))
+            self.finished.emit(report)
         except (LLMError, OSError, RuntimeError) as e:
             self.failed.emit(str(e))
 
@@ -126,6 +126,7 @@ class ProcessWorker(QObject):
 
 class MeetingPage(QWidget):
     recording_changed = Signal(bool)
+    processed = Signal(object, str, list, object)  # report, date, attendees, folder
 
     def __init__(self, settings: Settings):
         super().__init__()
@@ -138,9 +139,12 @@ class MeetingPage(QWidget):
         self.title_edit = QLineEdit("Meeting")
         self.type_combo = QComboBox()
         self.type_combo.addItems(MEETING_TYPES)
+        self.attendees_edit = QLineEdit()
+        self.attendees_edit.setPlaceholderText("Emails, comma separated (used by automations)")
         form = QFormLayout()
         form.addRow("Title", self.title_edit)
         form.addRow("Type", self.type_combo)
+        form.addRow("Attendees", self.attendees_edit)
 
         self.record_button = QPushButton("Start recording")
         self.record_button.setMinimumHeight(36)
@@ -230,10 +234,13 @@ class MeetingPage(QWidget):
         else:
             self.start_recording()
 
+    def attendees(self) -> list[str]:
+        return [a.strip() for a in self.attendees_edit.text().replace(";", ",").split(",") if a.strip()]
+
     def start_recording(self) -> None:
         try:
             self.session = MeetingSession.create(
-                self.settings.meetings_dir, self.title_edit.text(), self.type_combo.currentText()
+                self.settings.meetings_dir, self.title_edit.text(), self.type_combo.currentText(), self.attendees()
             )
             self.recorder.start(self.session.folder)
         except Exception as e:  # device errors come from PortAudio as plain exceptions
@@ -300,6 +307,7 @@ class MeetingPage(QWidget):
             self.session.save_anchors(self.anchors_edit.toPlainText())
             info: MeetingInfo = self.session.load_info()
             info.title, info.meeting_type = self.title_edit.text(), self.type_combo.currentText()
+            info.attendees = self.attendees()
             self.session.save_info(info)
         self.process_button.setEnabled(False)
         self.record_button.setEnabled(False)
@@ -317,11 +325,18 @@ class MeetingPage(QWidget):
         self.worker.failed.connect(self.thread.quit)
         self.thread.start()
 
-    def _show_report(self, markdown: str) -> None:
+    def _show_report(self, report) -> None:
+        if self.session:
+            markdown = self.session.save_report(report)
+            date = self.session.load_info().started_at
+        else:
+            markdown = render_markdown(report)
+            date = datetime.now().isoformat(timespec="seconds")
         self.report_view.setMarkdown(markdown)
         where = f" Saved in {self.session.folder}" if self.session else ""
         self.status.setText("Done." + where)
         self._processing_done()
+        self.processed.emit(report, date, self.attendees(), self.session.folder if self.session else None)
 
     def _show_error(self, message: str) -> None:
         self.status.setText(f"Error: {message}")
@@ -336,31 +351,29 @@ class MeetingPage(QWidget):
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.session.folder)))
 
 
-class AutomationsPage(QWidget):
-    def __init__(self):
-        super().__init__()
-        intro = QLabel(
-            "Set up rules without code, such as “after a client meeting, draft a recap email "
-            "to external attendees for my review”. Each rule is a trigger, optional conditions, "
-            "one or more actions, and whether it runs automatically or waits for approval."
-        )
-        intro.setWordWrap(True)
-        soon = QLabel("The automation builder is the next milestone.")
-        soon.setStyleSheet("color: palette(placeholder-text);")
-        new_button = QPushButton("New automation")
-        new_button.setEnabled(False)
-        layout = QVBoxLayout(self)
-        layout.addWidget(heading("Automations"))
-        layout.addWidget(intro)
-        layout.addWidget(soon)
-        layout.addWidget(new_button, 0, Qt.AlignLeft)
-        layout.addStretch()
-
-
 class SettingsPage(QWidget):
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, store: Store):
         super().__init__()
         self.settings = settings
+        self.store = store
+        prefs = store.prefs()
+        self.my_email = QLineEdit(prefs.my_email)
+        self.my_email.setPlaceholderText("you@yourcompany.com")
+        self.company_domain = QLineEdit(prefs.company_domain)
+        self.company_domain.setPlaceholderText("yourcompany.com")
+        save = QPushButton("Save")
+        save.clicked.connect(self.save_prefs)
+        self.prefs_status = QLabel("")
+        you = QFormLayout()
+        you.addRow("Your email", self.my_email)
+        you.addRow("Company email domain", self.company_domain)
+        you.addRow("", save)
+        you.addRow("", self.prefs_status)
+        explain = QLabel("Attendees whose email ends with your company domain count as internal. "
+                         "Everyone else is external, so internal notes never reach them.")
+        explain.setWordWrap(True)
+        explain.setStyleSheet("color: palette(placeholder-text);")
+
         form = QFormLayout()
         form.addRow("AI model", QLabel(f"{settings.ollama_model}  (Ollama at {settings.ollama_host})"))
         form.addRow("Speech to text", QLabel(f"faster-whisper {settings.whisper_model}, device: {settings.whisper_device}"))
@@ -380,11 +393,21 @@ class SettingsPage(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(heading("Settings"))
+        layout.addWidget(QLabel("You"))
+        layout.addLayout(you)
+        layout.addWidget(explain)
+        layout.addSpacing(16)
+        layout.addWidget(QLabel("Models and storage"))
         layout.addLayout(form)
         layout.addLayout(buttons)
         layout.addWidget(self.model_status)
         layout.addWidget(note)
         layout.addStretch()
+
+    def save_prefs(self) -> None:
+        self.store.save_prefs(Prefs(my_email=self.my_email.text().strip(),
+                                    company_domain=self.company_domain.text().strip().lstrip("@")))
+        self.prefs_status.setText("Saved.")
 
     def check_model(self) -> None:
         ok = OllamaProvider(self.settings).is_available()
@@ -406,10 +429,16 @@ class MainWindow(QMainWindow):
         self.idle_icon, self.recording_icon = dot_icon("#9e9e9e"), dot_icon("#e53935")
         self.setWindowIcon(self.idle_icon)
 
+        self.store = Store(settings.meetings_dir / "assistant.db")
+        self.engine = Engine(self.store, settings.meetings_dir / "outputs", notifier=self.notify)
+
         self.meeting = MeetingPage(settings)
         self.meeting.recording_changed.connect(self._on_recording_changed)
+        self.meeting.processed.connect(self._run_automations)
+        self.automations = AutomationsPage(self.store, self.engine, settings.meetings_dir)
+        self.automations.approvals_changed.connect(self._on_approvals_changed)
         self.pages = QStackedWidget()
-        for page in (self.meeting, AutomationsPage(), SettingsPage(settings)):
+        for page in (self.meeting, self.automations, SettingsPage(settings, self.store)):
             self.pages.addWidget(page)
 
         self.nav = QListWidget()
@@ -433,6 +462,24 @@ class MainWindow(QMainWindow):
         self.hotkeys.start()
 
         self.tray = self._make_tray() if QSystemTrayIcon.isSystemTrayAvailable() else None
+        self.automations.refresh()
+
+    def notify(self, title: str, message: str) -> None:
+        if self.tray:
+            self.tray.showMessage(title, message)
+
+    def _run_automations(self, report, date: str, attendees: list, folder) -> None:
+        outcomes = self.engine.handle(events_from_report(report, date, attendees, folder))
+        self.automations.refresh()
+        if outcomes:
+            counts: dict[str, int] = {}
+            for o in outcomes:
+                counts[o.status] = counts.get(o.status, 0) + 1
+            summary = ", ".join(f"{n} {status}" for status, n in counts.items())
+            self.meeting.status.setText(self.meeting.status.text() + f"  Automations: {summary}.")
+
+    def _on_approvals_changed(self, count: int) -> None:
+        self.nav.item(1).setText(f"Automations ({count})" if count else "Automations")
 
     def _make_tray(self) -> QSystemTrayIcon:
         tray = QSystemTrayIcon(self.idle_icon, self)

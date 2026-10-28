@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -26,6 +26,7 @@ class MeetingInfo:
     meeting_type: str
     started_at: str
     duration_seconds: float = 0.0
+    attendees: list[str] = field(default_factory=list)
 
 
 class MeetingSession:
@@ -33,12 +34,15 @@ class MeetingSession:
         self.folder = folder
 
     @classmethod
-    def create(cls, base_dir: Path, title: str, meeting_type: str, now: datetime | None = None) -> "MeetingSession":
+    def create(
+        cls, base_dir: Path, title: str, meeting_type: str,
+        attendees: list[str] | None = None, now: datetime | None = None,
+    ) -> "MeetingSession":
         now = now or datetime.now()
         folder = base_dir / f"{now:%Y-%m-%d_%H%M%S}_{slugify(title)}"
         folder.mkdir(parents=True, exist_ok=False)
         session = cls(folder)
-        session.save_info(MeetingInfo(title, meeting_type, now.isoformat(timespec="seconds")))
+        session.save_info(MeetingInfo(title, meeting_type, now.isoformat(timespec="seconds"), attendees=attendees or []))
         return session
 
     # paths

@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# what a small model writes when a field is unknown; treated as empty
+NOT_GIVEN = {"", "none", "null", "n/a", "na", "not specified", "unspecified", "unknown", "tbd", "not mentioned"}
 
 
 def format_ts(seconds: float | None) -> str:
@@ -60,6 +63,13 @@ class ActionItem(BaseModel):
     owner: str | None = None
     due: str | None = None
     timestamp: str | None = None
+
+    @field_validator("owner", "due")
+    @classmethod
+    def blank_if_not_given(cls, value: str | None) -> str | None:
+        if value is None or value.strip().lower().rstrip(".") in NOT_GIVEN:
+            return None
+        return value.strip()
 
 
 class Summary(BaseModel):
