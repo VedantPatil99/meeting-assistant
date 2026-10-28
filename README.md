@@ -63,6 +63,24 @@ meeting-assistant-app
 The sample meeting contains a deliberate conflict: the user noted go-live as 15 December, but
 the meeting agreed on 20 December.
 
+## Desktop app
+`meeting-assistant-app` opens the window and puts an icon in the system tray.
+
+1. **Start recording.** Your mic and the call audio (everything your speakers play) are recorded
+   as two tracks. That gives a "Me" vs "Others" speaker split without extra models. Windows
+   loopback sends nothing during silence, so both tracks are padded against the clock and stay
+   aligned. Audio is stored as 16 kHz mono, about 115 MB per hour per track.
+2. **Add notes from any app** with `Ctrl+Shift+Space`. A small box opens over Zoom or Teams and
+   each note is stamped with the meeting time.
+3. **Stop, review your notes, then Process meeting.** Both tracks are transcribed, merged by time,
+   and run through the pipeline.
+
+Each meeting is saved in its own folder under `%USERPROFILE%\MeetingAssistant`: audio, notes,
+transcript and report. Closing the window while recording keeps recording from the tray.
+
+Speech-to-text uses the GPU when NVIDIA's cuBLAS and cuDNN libraries are installed, and falls
+back to the CPU otherwise.
+
 ## Tests
 ```bash
 pytest
@@ -71,10 +89,10 @@ The tests use a fake provider, so they run without Ollama.
 
 ## Roadmap
 - [x] Core pipeline: summary, coverage guarantee, conflict detection
-- [x] CLI and a minimal desktop window with a meeting clock for timestamped anchors
-- [ ] Record mic and system audio in the app; tray icon; global hotkeys
+- [x] CLI
+- [x] Desktop app: mic and call-audio recording, tray icon, global note hotkey, meeting folders
+- [ ] Automation builder: no-code rules (trigger, conditions, actions, approval mode) with a test run
 - [ ] Notion sync: meeting pages and Tasks database
 - [ ] Feature-request detection and deduplication into a Notion tracker
-- [ ] Follow-up email drafts (internal notes filtered out) with an approval step
-- [ ] Automation rules engine
+- [ ] Follow-up email drafts (internal notes filtered out) through Gmail, with approval
 - [ ] Evaluation set: coverage %, action-item precision/recall, dedup accuracy

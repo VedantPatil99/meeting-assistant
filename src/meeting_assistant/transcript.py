@@ -37,6 +37,12 @@ def parse_transcript(text: str) -> Transcript:
     return Transcript(segments=segments)
 
 
+def merge_transcripts(parts: list[Transcript]) -> Transcript:
+    """Interleave transcripts of aligned tracks by start time."""
+    segments = [seg for part in parts for seg in part.segments]
+    return Transcript(segments=sorted(segments, key=lambda seg: seg.start))
+
+
 def chunk_segments(transcript: Transcript, max_chars: int = 6000) -> list[list[Segment]]:
     """Group consecutive segments into chunks of roughly max_chars rendered characters."""
     chunks: list[list[Segment]] = []
