@@ -1,8 +1,15 @@
 # Meeting Assistant
 
-An offline AI meeting assistant for Windows. During a meeting you type quick **anchors**, the
-points you know matter. Afterwards the assistant summarizes the transcript and **verifies** that
-every anchor made it into the summary. It also flags anchors that contradict what was actually said.
+An offline AI meeting assistant for Windows. It records the meeting, transcribes it, and turns it
+into a summary, **scheduled tasks** and **follow-up email drafts** for the right people.
+
+During the meeting you type quick **anchors**, the points you know matter, and can mark any of
+them **internal** so they never reach people outside your company. Afterwards the assistant
+**verifies** that every anchor made it into the summary and flags anchors that contradict what was
+actually said.
+
+Everything works inside the app. **Gmail** (send follow-ups) and **Notion** (keep meetings and
+tasks there too) are optional connectors.
 
 Everything runs locally and costs nothing: a local LLM through [Ollama](https://ollama.com) and
 local speech-to-text through [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
@@ -78,6 +85,52 @@ the meeting agreed on 20 December.
 Each meeting is saved in its own folder under `%USERPROFILE%\MeetingAssistant`: audio, notes,
 transcript and report. Closing the window while recording keeps recording from the tray.
 
+Tick **Internal** next to the note box (or press `Ctrl+I` in the quick-note popup) to make a note
+internal. It still shapes your summary and internal emails, but it is kept out of anything sent
+outside your company.
+
+| Page | What it does |
+|---|---|
+| Meeting | Record, take notes, process |
+| Meetings | Every past meeting: summary, full transcript, your notes (internal ones highlighted), search, reprocess with edited notes |
+| Tasks | Action items become **suggested** tasks with real due dates. Schedule or dismiss them, add your own, mark them done. Tasks due today trigger a tray reminder |
+| Drafts | One follow-up email per suggested person, with the reason they were picked. Edit, copy, put in Gmail Drafts, or send |
+| Automations | No-code rules (below) |
+| Settings | Your email and company domain, Gmail, Notion, models |
+
+### Tasks and due dates
+The model copies the due date as said ("by Friday", "end of next week", "15/12"); a small
+deterministic parser (`scheduling.py`) turns it into a calendar date counted from the meeting
+day. "Friday" means the coming Friday and "next Friday" means Friday of next week, every time.
+
+### Follow-up drafts
+After the summary, the model picks who needs a follow-up (at most four people) and says why,
+then writes one email per person. Names are matched to addresses from the attendee list and
+from contacts the app learns when you fill in an address. Your company domain decides who is
+external, whatever the model guessed.
+
+For external recipients, the model drafts from a summary with every line that came from an
+internal note removed, and never sees the internal notes. A final check compares each external
+draft against your internal notes and shows a warning if one seems to have slipped through.
+
+### Gmail (optional)
+Uses your own free Google Cloud OAuth client, so nothing is shared with a third party:
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project and enable the **Gmail API**.
+2. **OAuth consent screen:** user type External; add your address under **Test users**.
+3. **Credentials > Create credentials > OAuth client ID > Desktop app.** Paste the client ID and
+   secret into Settings > Gmail, then press **Connect Gmail** and sign in in the browser.
+
+The app asks only for `gmail.compose` (create drafts and send; it can't read your inbox). Sign-in
+uses OAuth with PKCE and a loopback redirect, so your password never touches the app. The refresh
+token is stored in Windows Credential Manager. While the Google project is in **Testing** mode,
+Google expires the sign-in after 7 days and you press Connect again.
+
+### Notion (optional)
+Settings > Notion: paste an internal integration secret, pick a page shared with it, and the app
+creates linked **Meetings** and **Tasks** databases there. Use the **Add to Notion** button on a
+task, or the "Save to Notion" automation actions. Saving the same meeting or task twice doesn't
+duplicate it.
+
 Speech-to-text uses the GPU when NVIDIA's cuBLAS and cuDNN libraries are installed, and falls
 back to the CPU otherwise.
 
@@ -91,7 +144,7 @@ The **Automations** page lets you build rules from dropdowns. Each rule is one s
 |---|---|
 | When | A meeting is processed · an action item is found · a note conflicts with the meeting |
 | Only if | Meeting type, title, external attendees, conflicts, feature requests, number of action items, action item owner or text |
-| Then | Draft an email from a template · create tasks · show a notification · save the summary to a folder |
+| Then | Draft an email from a template · create tasks · add the meeting or its tasks to Notion · show a notification · save the summary to a folder |
 | How | Run automatically · wait for my approval · only tell me what it would do |
 
 - **Templates:** five ready-made rules, such as a client recap email or tasks from every meeting.
@@ -118,7 +171,10 @@ The tests use a fake provider, so they run without Ollama.
 - [x] CLI
 - [x] Desktop app: mic and call-audio recording, tray icon, global note hotkey, meeting folders
 - [x] Automation builder: no-code rules, templates, test run, approvals inbox, activity log, tasks
-- [ ] Notion sync: meeting pages and Tasks database
-- [ ] Feature-request detection and deduplication into a Notion tracker
-- [ ] Follow-up email drafts (internal notes filtered out) through Gmail, with approval
+- [x] Notion sync: meeting pages and Tasks database
+- [x] Meeting library, internal-note toggle
+- [x] Tasks with parsed due dates and reminders
+- [x] Follow-up drafts for suggested recipients, internal notes filtered and leak-checked
+- [x] Gmail connector: drafts and send
+- [ ] Feature-request detection and deduplication into a tracker
 - [ ] Evaluation set: coverage %, action-item precision/recall, dedup accuracy

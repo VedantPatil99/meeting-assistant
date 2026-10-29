@@ -3,8 +3,17 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QFrame, QLabel, QLineEdit, QVBoxLayout, QWidget
+from PySide6.QtGui import QCursor, QKeySequence, QShortcut
+from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
+
+
+def mark_internal(text: str) -> str:
+    """Turns a note into an internal one, replacing any other note type it had."""
+    for prefix in ("internal:", "ctx:", "fr:", "!"):
+        if text.lower().startswith(prefix):
+            text = text[len(prefix):].strip()
+            break
+    return f"internal: {text}"
 
 
 class QuickAnchor(QWidget):
@@ -25,11 +34,17 @@ class QuickAnchor(QWidget):
         self.input.setMinimumWidth(460)
         self.input.setPlaceholderText("Type and press Enter, Esc to cancel")
         self.input.returnPressed.connect(self._submit)
+        self.internal = QCheckBox("Internal (Ctrl+I)")
+        self.internal.setToolTip("Only your team sees it: never used in emails to people outside your company")
+        QShortcut(QKeySequence("Ctrl+I"), self, activated=self.internal.toggle)
 
         inner = QVBoxLayout(frame)
         inner.setContentsMargins(12, 10, 12, 12)
         inner.addWidget(self.hint)
-        inner.addWidget(self.input)
+        row = QHBoxLayout()
+        row.addWidget(self.input, 1)
+        row.addWidget(self.internal)
+        inner.addLayout(row)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.addWidget(frame)
@@ -37,6 +52,7 @@ class QuickAnchor(QWidget):
     def popup(self, clock: str) -> None:
         self.hint.setText(f"[{clock}]  ! must include   ctx: background   internal:   fr: feature request")
         self.input.clear()
+        self.internal.setChecked(False)
         self.adjustSize()
         pos = QCursor.pos()
         self.move(pos.x() - self.width() // 2, pos.y() + 16)
@@ -48,7 +64,7 @@ class QuickAnchor(QWidget):
     def _submit(self) -> None:
         text = self.input.text().strip()
         if text:
-            self.submitted.emit(text)
+            self.submitted.emit(mark_internal(text) if self.internal.isChecked() else text)
         self.hide()
 
     def keyPressEvent(self, event) -> None:

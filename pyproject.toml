@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.6",
     "httpx>=0.27",
     "python-dotenv>=1.0",
+    "keyring>=24",
 ]
 
 [project.optional-dependencies]

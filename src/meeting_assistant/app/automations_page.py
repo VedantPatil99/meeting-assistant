@@ -191,6 +191,12 @@ class ActionCard(QFrame):
         elif action.type == ActionType.CREATE_TASKS:
             form.addRow(quiet("Creates a task for each action item, with its owner and due date. "
                               "With the “action item is found” trigger, only that item."))
+        elif action.type == ActionType.NOTION_PAGE:
+            form.addRow(quiet("Adds the meeting to your Notion Meetings database, with the full report as "
+                              "the page. Running it twice for the same meeting doesn't create a duplicate."))
+        elif action.type == ActionType.NOTION_TASKS:
+            form.addRow(quiet("Adds each action item to your Notion Tasks database, linked to the meeting "
+                              "page, with status “To do”. Tasks already in Notion are skipped."))
         elif action.type == ActionType.NOTIFY:
             self.message = QLineEdit(p.get("message", ""))
             insert = QPushButton("Insert meeting detail")
@@ -597,7 +603,11 @@ class AutomationsPage(QWidget):
         if not 0 <= row < len(pending):
             return
         if approve:
-            result = self.engine.approve(pending[row]["id"])
+            try:
+                result = self.engine.approve(pending[row]["id"])
+            except Exception as e:  # e.g. Notion not connected: keep it in the inbox
+                self.approval_status.setText(f"Couldn't complete it, so it's still waiting: {e}")
+                return
             self.approval_status.setText(f"Approved. {result}")
         else:
             self.engine.reject(pending[row]["id"])

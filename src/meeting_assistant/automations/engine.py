@@ -15,7 +15,9 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import Callable
 
+from ..models import MeetingReport
 from ..report import render_markdown
+from ..scheduling import resolve_due
 from .context import EventContext, Prefs, condition_matches, render
 from .models import Action, ActionType, Mode, Recipients, Rule, Trigger
 from .store import Store
@@ -50,7 +52,7 @@ def resolve_recipients(action: Action, ctx: EventContext, prefs: Prefs) -> list[
 
 def plan_action(action: Action, ctx: EventContext, prefs: Prefs, out_dir: Path) -> tuple[list[dict], list[str]]:
     report = ctx.report
-    base = {"out_dir": str(out_dir), "meeting": report.title}
+    base = {"out_dir": str(out_dir), "meeting": report.title, "date": ctx.date}
 
     if action.type == ActionType.DRAFT_EMAIL:
         to = resolve_recipients(action, ctx, prefs)
@@ -66,15 +68,28 @@ def plan_action(action: Action, ctx: EventContext, prefs: Prefs, out_dir: Path) 
             "preview": f"To: {', '.join(to)}\nSubject: {subject}\n\n{body}",
         }], []
 
-    if action.type == ActionType.CREATE_TASKS:
+    if action.type in (ActionType.CREATE_TASKS, ActionType.NOTION_TASKS):
         items = [ctx.item] if ctx.trigger == Trigger.ACTION_ITEM and ctx.item else report.summary.action_items
         if not items:
             return [], ["Tasks skipped: the meeting has no action items."]
+        notion = action.type == ActionType.NOTION_TASKS
         return [{
-            **base, "kind": "task", "text": i.task, "owner": i.owner or "", "due": i.due or "",
-            "title": f"Task: {i.task}",
-            "preview": f"{i.task}\nOwner: {i.owner or 'unassigned'}   Due: {i.due or 'not set'}",
+            **base, "kind": "notion_task" if notion else "task",
+            "text": i.task, "owner": i.owner or "", "due": i.due or "",
+            "title": f"{'Notion task' if notion else 'Task'}: {i.task}",
+            "preview": f"{i.task}\nOwner: {i.owner or 'unassigned'}   Due: {i.due or 'not set'}"
+                       + ("\nAdded to the Notion Tasks database, linked to the meeting page." if notion else ""),
         } for i in items], []
+
+    if action.type == ActionType.NOTION_PAGE:
+        s = report.summary
+        return [{
+            **base, "kind": "notion_page", "report": report.model_dump(mode="json"), "attendees": ctx.attendees,
+            "title": f"Notion page: {report.title}",
+            "preview": (f"Adds “{report.title}” to the Notion Meetings database with "
+                        f"{len(s.decisions)} decisions, {len(s.action_items)} action items, "
+                        f"{len(s.open_questions)} open questions and the conflict check as the page body."),
+        }], []
 
     if action.type == ActionType.NOTIFY:
         message = render(action.params.get("message", ""), ctx)
@@ -94,10 +109,14 @@ def plan_action(action: Action, ctx: EventContext, prefs: Prefs, out_dir: Path) 
 
 
 class Engine:
-    def __init__(self, store: Store, default_out_dir: Path, notifier: Callable[[str, str], None] = lambda t, m: None):
+    def __init__(self, store: Store, default_out_dir: Path,
+                 notifier: Callable[[str, str], None] = lambda t, m: None,
+                 notion: Callable[[], object | None] = lambda: None):
+        """`notion` returns a connected NotionSync, or None when Notion isn't set up."""
         self.store = store
         self.default_out_dir = default_out_dir
         self.notifier = notifier
+        self.notion = notion
 
     def matches(self, rule: Rule, ctx: EventContext, prefs: Prefs) -> bool:
         return rule.trigger == ctx.trigger and all(condition_matches(c, ctx, prefs) for c in rule.conditions)
@@ -146,8 +165,16 @@ class Engine:
             if self.store.runs_in_last_hour(rule.id) >= MAX_AUTO_RUNS_PER_HOUR:
                 self.store.log_run(rule, meeting, "rate limited", "Paused: ran 20 times in the last hour.")
                 return Outcome(rule, "rate limited", effects, skipped)
+            errors = []
             for effect in effects:
-                self.execute(effect)
+                try:
+                    self.execute(effect)
+                except Exception as e:  # one failed action shouldn't stop the others
+                    errors.append(f"{effect['title']}: {e}")
+            if errors:
+                self.store.log_run(rule, meeting, "failed", "; ".join(errors))
+                self.notifier(f"{rule.name} failed", errors[0])
+                return Outcome(rule, "failed", effects, skipped + errors)
             status = "done"
         elif rule.mode == Mode.REVIEW:
             for effect in effects:
@@ -184,7 +211,10 @@ class Engine:
             path.write_bytes(bytes(msg))
             return str(path)
         if kind == "task":
-            self.store.add_task(effect["text"], effect["owner"], effect["due"], effect["meeting"])
+            due_date = resolve_due(effect["due"], effect["date"] or None)
+            self.store.add_task(effect["text"], effect["owner"], effect["due"], effect["meeting"],
+                                due_date=due_date.isoformat() if due_date else None,
+                                folder=str(out_dir) if out_dir != self.default_out_dir else "")
             out_dir.mkdir(parents=True, exist_ok=True)
             meta = ", ".join(x for x in [effect["owner"], effect["due"] and f"due {effect['due']}"] if x)
             with open(out_dir / "tasks.md", "a", encoding="utf-8") as f:
@@ -198,4 +228,13 @@ class Engine:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(effect["content"], encoding="utf-8")
             return str(path)
+        if kind in ("notion_page", "notion_task"):
+            notion = self.notion()
+            if notion is None:
+                raise RuntimeError("Notion isn't connected. Connect it in Settings.")
+            if kind == "notion_page":
+                report = MeetingReport.model_validate(effect["report"])
+                return notion.save_meeting(report, effect["date"], effect["attendees"])
+            url = notion.save_task(effect["text"], effect["owner"], effect["due"], effect["meeting"], effect["date"])
+            return url or "already in Notion"
         raise ValueError(f"Unknown effect kind {kind}")

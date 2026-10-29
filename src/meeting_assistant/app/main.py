@@ -1,4 +1,5 @@
-"""Desktop app: record a meeting, add notes from anywhere with a hotkey, then process it.
+"""Desktop app: record a meeting, add notes from anywhere with a hotkey, then process it into a
+summary, scheduled tasks and follow-up email drafts. Gmail and Notion are optional connectors.
 
 Run with:  python -m meeting_assistant.app.main   (or the meeting-assistant-app shortcut)
 """
@@ -6,13 +7,14 @@ Run with:  python -m meeting_assistant.app.main   (or the meeting-assistant-app 
 from __future__ import annotations
 
 import sys
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
@@ -34,21 +36,31 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..after_meeting import save_suggestions
 from ..anchors import parse_anchors
 from ..automations import Engine, Prefs, Store, events_from_report
 from ..config import Settings
+from ..gmail import GmailConnection
 from ..llm import LLMError, OllamaProvider
 from ..models import format_ts
 from ..pipeline import process_meeting
+from ..pipeline.followups import suggest_followups
 from ..recorder import Recorder
-from ..report import render_markdown
 from ..session import MeetingInfo, MeetingSession
 from ..transcript import parse_transcript
+from ..notion.connection import NotionConnection
 from .automations_page import AutomationsPage
+from .drafts_page import DraftsPage
+from .gmail_settings import GmailSettings
+from .library_page import LibraryPage
+from .notion_settings import NotionSettings
 from .hotkeys import MOD_CONTROL, MOD_SHIFT, VK_SPACE, HotkeyThread
-from .quick_anchor import QuickAnchor
+from .quick_anchor import QuickAnchor, mark_internal
+from .tasks_page import TasksPage
 
 MEETING_TYPES = ["client feedback", "general", "standup", "sprint planning", "1:1"]
+NAV = ["Meeting", "Meetings", "Tasks", "Drafts", "Automations", "Settings"]
+NAV_TASKS, NAV_DRAFTS, NAV_AUTOMATIONS = 2, 3, 4
 HOTKEY_NOTE = 1
 HOTKEY_LABEL = "Ctrl+Shift+Space"
 
@@ -72,21 +84,23 @@ def heading(text: str) -> QLabel:
 
 
 class ProcessWorker(QObject):
-    """Transcribes the recording if needed, then runs the pipeline, off the UI thread."""
+    """Transcribes the recording if needed, runs the pipeline, then drafts follow-ups, off the UI thread."""
 
     progress = Signal(str)
-    finished = Signal(object)  # MeetingReport
+    finished = Signal(object, object)  # MeetingReport, list[SuggestedEmail]
     failed = Signal(str)
 
     def __init__(self, settings: Settings, anchors_text: str, title: str, meeting_type: str,
-                 session: MeetingSession | None = None, transcript_path: str | None = None):
+                 session: MeetingSession, attendees: list[str], prefs: Prefs, contacts: dict[str, str]):
         super().__init__()
         self.settings = settings
         self.anchors_text = anchors_text
         self.title = title
         self.meeting_type = meeting_type
         self.session = session
-        self.transcript_path = transcript_path
+        self.attendees = attendees
+        self.prefs = prefs
+        self.contacts = contacts
 
     def run(self) -> None:
         try:
@@ -94,21 +108,27 @@ class ProcessWorker(QObject):
             if not transcript.segments:
                 self.failed.emit("No speech was found in the recording.")
                 return
+            provider = OllamaProvider(self.settings)
             report = process_meeting(
-                OllamaProvider(self.settings),
+                provider,
                 transcript,
                 parse_anchors(self.anchors_text),
                 title=self.title,
                 meeting_type=self.meeting_type,
                 on_progress=self.progress.emit,
             )
-            self.finished.emit(report)
         except (LLMError, OSError, RuntimeError) as e:
             self.failed.emit(str(e))
+            return
+        self.progress.emit("Drafting follow-up emails")
+        try:
+            emails = suggest_followups(provider, report, self.attendees, self.prefs, self.contacts,
+                                       meeting_date=self.session.load_info().started_at)
+        except LLMError:
+            emails = []  # the summary is still useful without drafts
+        self.finished.emit(report, emails)
 
     def _transcript(self):
-        if self.transcript_path:
-            return parse_transcript(Path(self.transcript_path).read_text(encoding="utf-8"))
         if self.session.transcript_file.exists():
             return parse_transcript(self.session.transcript_file.read_text(encoding="utf-8"))
 
@@ -126,11 +146,12 @@ class ProcessWorker(QObject):
 
 class MeetingPage(QWidget):
     recording_changed = Signal(bool)
-    processed = Signal(object, str, list, object)  # report, date, attendees, folder
+    processed = Signal(object, str, list, object, object)  # report, date, attendees, folder, follow-up emails
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, store: Store):
         super().__init__()
         self.settings = settings
+        self.store = store
         self.recorder = Recorder()
         self.session: MeetingSession | None = None
         self.transcript_path: str | None = None
@@ -165,6 +186,12 @@ class MeetingPage(QWidget):
         self.anchor_input = QLineEdit()
         self.anchor_input.setPlaceholderText(f"Add a note and press Enter  ({HOTKEY_LABEL} works from any app)")
         self.anchor_input.returnPressed.connect(self._add_from_input)
+        self.internal_check = QCheckBox("Internal")
+        self.internal_check.setToolTip("Only your team sees this note. It's used in your summary and internal "
+                                       "emails, never in emails to people outside your company.")
+        note_row = QHBoxLayout()
+        note_row.addWidget(self.anchor_input, 1)
+        note_row.addWidget(self.internal_check)
         self.anchors_edit = QPlainTextEdit()
         self.anchors_edit.setPlaceholderText(
             "! must include      ctx: background only\ninternal: never client-facing      fr: feature request"
@@ -191,7 +218,7 @@ class MeetingPage(QWidget):
         left.addLayout(record_row)
         left.addLayout(meters)
         left.addWidget(QLabel("Your notes (anchors)"))
-        left.addWidget(self.anchor_input)
+        left.addLayout(note_row)
         left.addWidget(self.anchors_edit, 1)
         left.addWidget(self.process_button)
         left.addLayout(actions)
@@ -289,8 +316,25 @@ class MeetingPage(QWidget):
     def _add_from_input(self) -> None:
         text = self.anchor_input.text().strip()
         if text:
-            self.add_anchor(text)
+            self.add_anchor(mark_internal(text) if self.internal_check.isChecked() else text)
             self.anchor_input.clear()
+
+    def load_session(self, session: MeetingSession) -> None:
+        """Reopen a saved meeting to change its notes or details and process it again."""
+        if self.is_recording:
+            self.status.setText("Stop the current recording first.")
+            return
+        info = session.load_info()
+        self.session, self.transcript_path = session, None
+        self.title_edit.setText(info.title)
+        self.type_combo.setCurrentText(info.meeting_type)
+        self.attendees_edit.setText(", ".join(info.attendees))
+        self.anchors_edit.setPlainText(session.load_anchors())
+        self.report_view.setMarkdown(session.report_file.read_text(encoding="utf-8")
+                                     if session.report_file.exists() else "")
+        self.process_button.setEnabled(True)
+        self.open_folder_button.setEnabled(True)
+        self.status.setText(f"Opened “{info.title}”. Edit your notes, then process.")
 
     # processing
     def pick_transcript(self) -> None:
@@ -303,18 +347,26 @@ class MeetingPage(QWidget):
             self.status.setText(f"Transcript: {Path(path).name}")
 
     def process(self) -> None:
-        if self.session:
-            self.session.save_anchors(self.anchors_edit.toPlainText())
-            info: MeetingInfo = self.session.load_info()
-            info.title, info.meeting_type = self.title_edit.text(), self.type_combo.currentText()
-            info.attendees = self.attendees()
-            self.session.save_info(info)
+        if self.transcript_path:
+            # a transcript file becomes a meeting folder too, so it shows up under Meetings
+            self.session = MeetingSession.create(self.settings.meetings_dir, self.title_edit.text(),
+                                                 self.type_combo.currentText(), self.attendees())
+            self.session.transcript_file.write_text(Path(self.transcript_path).read_text(encoding="utf-8"),
+                                                    encoding="utf-8")
+            self.transcript_path = None
+            self.open_folder_button.setEnabled(True)
+        self.session.save_anchors(self.anchors_edit.toPlainText())
+        info: MeetingInfo = self.session.load_info()
+        info.title, info.meeting_type = self.title_edit.text(), self.type_combo.currentText()
+        info.attendees = self.attendees()
+        self.session.save_info(info)
         self.process_button.setEnabled(False)
         self.record_button.setEnabled(False)
         self.thread = QThread()
         self.worker = ProcessWorker(
             self.settings, self.anchors_edit.toPlainText(), self.title_edit.text(),
-            self.type_combo.currentText(), session=self.session, transcript_path=self.transcript_path,
+            self.type_combo.currentText(), self.session, self.attendees(),
+            self.store.prefs(), self.store.contacts(),
         )
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
@@ -325,18 +377,13 @@ class MeetingPage(QWidget):
         self.worker.failed.connect(self.thread.quit)
         self.thread.start()
 
-    def _show_report(self, report) -> None:
-        if self.session:
-            markdown = self.session.save_report(report)
-            date = self.session.load_info().started_at
-        else:
-            markdown = render_markdown(report)
-            date = datetime.now().isoformat(timespec="seconds")
+    def _show_report(self, report, emails) -> None:
+        markdown = self.session.save_report(report)
         self.report_view.setMarkdown(markdown)
-        where = f" Saved in {self.session.folder}" if self.session else ""
-        self.status.setText("Done." + where)
+        self.status.setText("Done.")
         self._processing_done()
-        self.processed.emit(report, date, self.attendees(), self.session.folder if self.session else None)
+        self.processed.emit(report, self.session.load_info().started_at, self.attendees(),
+                            self.session.folder, emails)
 
     def _show_error(self, message: str) -> None:
         self.status.setText(f"Error: {message}")
@@ -352,10 +399,12 @@ class MeetingPage(QWidget):
 
 
 class SettingsPage(QWidget):
-    def __init__(self, settings: Settings, store: Store):
+    def __init__(self, settings: Settings, store: Store, notion: NotionConnection, gmail: GmailConnection):
         super().__init__()
         self.settings = settings
         self.store = store
+        self.notion = NotionSettings(notion)
+        self.gmail = GmailSettings(gmail)
         prefs = store.prefs()
         self.my_email = QLineEdit(prefs.my_email)
         self.my_email.setPlaceholderText("you@yourcompany.com")
@@ -393,11 +442,17 @@ class SettingsPage(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(heading("Settings"))
-        layout.addWidget(QLabel("You"))
+        layout.addWidget(QLabel("<b>You</b>"))
         layout.addLayout(you)
         layout.addWidget(explain)
         layout.addSpacing(16)
-        layout.addWidget(QLabel("Models and storage"))
+        layout.addWidget(QLabel("<b>Gmail</b> (optional: send follow-ups from the app)"))
+        layout.addWidget(self.gmail)
+        layout.addSpacing(16)
+        layout.addWidget(QLabel("<b>Notion</b> (optional: also keep meetings and tasks in Notion)"))
+        layout.addWidget(self.notion)
+        layout.addSpacing(16)
+        layout.addWidget(QLabel("<b>Models and storage</b>"))
         layout.addLayout(form)
         layout.addLayout(buttons)
         layout.addWidget(self.model_status)
@@ -430,20 +485,32 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(self.idle_icon)
 
         self.store = Store(settings.meetings_dir / "assistant.db")
-        self.engine = Engine(self.store, settings.meetings_dir / "outputs", notifier=self.notify)
+        self.notion = NotionConnection(self.store)
+        self.engine = Engine(self.store, settings.meetings_dir / "outputs", notifier=self.notify,
+                             notion=self.notion.sync)
 
-        self.meeting = MeetingPage(settings)
+        self.gmail = GmailConnection(self.store)
+
+        self.meeting = MeetingPage(settings, self.store)
         self.meeting.recording_changed.connect(self._on_recording_changed)
-        self.meeting.processed.connect(self._run_automations)
+        self.meeting.processed.connect(self._after_meeting)
+        self.library = LibraryPage(settings.meetings_dir)
+        self.library.reopen.connect(self._reopen_meeting)
+        self.tasks = TasksPage(self.store, self.notion)
+        self.tasks.counts_changed.connect(lambda n: self._badge(NAV_TASKS, n))
+        self.drafts = DraftsPage(self.store, self.gmail)
+        self.drafts.count_changed.connect(lambda n: self._badge(NAV_DRAFTS, n))
         self.automations = AutomationsPage(self.store, self.engine, settings.meetings_dir)
-        self.automations.approvals_changed.connect(self._on_approvals_changed)
+        self.automations.approvals_changed.connect(lambda n: self._badge(NAV_AUTOMATIONS, n))
+        self.settings_page = SettingsPage(settings, self.store, self.notion, self.gmail)
+        self.settings_page.gmail.changed.connect(self.drafts.refresh)
         self.pages = QStackedWidget()
-        for page in (self.meeting, self.automations, SettingsPage(settings, self.store)):
+        for page in (self.meeting, self.library, self.tasks, self.drafts, self.automations, self.settings_page):
             self.pages.addWidget(page)
 
         self.nav = QListWidget()
-        self.nav.addItems(["Meeting", "Automations", "Settings"])
-        self.nav.setFixedWidth(150)
+        self.nav.addItems(NAV)
+        self.nav.setFixedWidth(160)
         self.nav.setStyleSheet("QListWidget { font-size: 14px; } QListWidget::item { padding: 10px; }")
         self.nav.currentRowChanged.connect(self.pages.setCurrentIndex)
         self.nav.setCurrentRow(0)
@@ -462,24 +529,51 @@ class MainWindow(QMainWindow):
         self.hotkeys.start()
 
         self.tray = self._make_tray() if QSystemTrayIcon.isSystemTrayAvailable() else None
-        self.automations.refresh()
+        for page in (self.automations, self.tasks, self.drafts):
+            page.refresh()
+
+        self.reminders = QTimer(self)
+        self.reminders.setInterval(15 * 60 * 1000)
+        self.reminders.timeout.connect(self.remind_due_tasks)
+        self.reminders.start()
+        QTimer.singleShot(3000, self.remind_due_tasks)
 
     def notify(self, title: str, message: str) -> None:
         if self.tray:
             self.tray.showMessage(title, message)
 
-    def _run_automations(self, report, date: str, attendees: list, folder) -> None:
+    def _after_meeting(self, report, date: str, attendees: list, folder, emails) -> None:
+        tasks, drafts = save_suggestions(self.store, report, date, folder, emails)
+        parts = [f"{tasks} task{'s' if tasks != 1 else ''} to schedule in Tasks",
+                 f"{drafts} follow-up draft{'s' if drafts != 1 else ''} in Drafts"]
         outcomes = self.engine.handle(events_from_report(report, date, attendees, folder))
-        self.automations.refresh()
         if outcomes:
             counts: dict[str, int] = {}
             for o in outcomes:
                 counts[o.status] = counts.get(o.status, 0) + 1
-            summary = ", ".join(f"{n} {status}" for status, n in counts.items())
-            self.meeting.status.setText(self.meeting.status.text() + f"  Automations: {summary}.")
+            parts.append("automations: " + ", ".join(f"{n} {status}" for status, n in counts.items()))
+        self.meeting.status.setText("Done. " + "; ".join(parts) + ".")
+        for page in (self.automations, self.tasks, self.drafts):
+            page.refresh()
+        self.library.refresh(select=folder)
 
-    def _on_approvals_changed(self, count: int) -> None:
-        self.nav.item(1).setText(f"Automations ({count})" if count else "Automations")
+    def _reopen_meeting(self, session) -> None:
+        self.meeting.load_session(session)
+        self.nav.setCurrentRow(NAV.index("Meeting"))
+
+    def _badge(self, row: int, count: int) -> None:
+        self.nav.item(row).setText(f"{NAV[row]} ({count})" if count else NAV[row])
+
+    def remind_due_tasks(self) -> None:
+        today = date.today().isoformat()
+        due = self.store.due_for_reminder(today)
+        if not due:
+            return
+        names = "; ".join(r["text"] for r in due[:3]) + ("…" if len(due) > 3 else "")
+        self.notify(f"{len(due)} task{'s' if len(due) > 1 else ''} due", names)
+        for r in due:
+            self.store.update_task(r["id"], reminded_on=today)
+        self.tasks.refresh()
 
     def _make_tray(self) -> QSystemTrayIcon:
         tray = QSystemTrayIcon(self.idle_icon, self)

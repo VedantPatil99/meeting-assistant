@@ -30,6 +30,8 @@ class ActionType(str, Enum):
     CREATE_TASKS = "create_tasks"
     NOTIFY = "notify"
     SAVE_SUMMARY = "save_summary"
+    NOTION_PAGE = "notion_page"
+    NOTION_TASKS = "notion_tasks"
 
 
 ACTION_LABELS = {
@@ -37,6 +39,8 @@ ACTION_LABELS = {
     ActionType.CREATE_TASKS: "Create tasks from action items",
     ActionType.NOTIFY: "Show me a notification",
     ActionType.SAVE_SUMMARY: "Save the summary to a folder",
+    ActionType.NOTION_PAGE: "Save the meeting to Notion",
+    ActionType.NOTION_TASKS: "Create tasks in Notion",
 }
 
 

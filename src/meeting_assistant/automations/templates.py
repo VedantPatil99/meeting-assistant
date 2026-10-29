@@ -90,6 +90,16 @@ def builtin_templates() -> list[tuple[str, Rule]]:
             ),
         ),
         (
+            "Add every meeting to your Notion Meetings database and its action items to Tasks, "
+            "linked together. Needs Notion connected in Settings.",
+            Rule(
+                name="Save meetings to Notion",
+                trigger=Trigger.MEETING_PROCESSED,
+                actions=[Action(type=ActionType.NOTION_PAGE), Action(type=ActionType.NOTION_TASKS)],
+                mode=Mode.AUTO,
+            ),
+        ),
+        (
             "Keep a copy of every meeting report in a folder, such as a shared drive.",
             Rule(
                 name="Archive reports to a folder",
