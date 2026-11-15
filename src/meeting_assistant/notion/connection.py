@@ -10,6 +10,7 @@ from .sync import NotionSync
 
 TOKEN = "notion"
 MEETINGS_DB, TASKS_DB, PARENT_TITLE = "notion_meetings_db", "notion_tasks_db", "notion_parent_title"
+FEATURES_DB, PARENT_ID = "notion_features_db", "notion_parent_id"
 
 
 class NotionConnection:
@@ -42,7 +43,23 @@ class NotionConnection:
         """What automations use. None until a token and both databases are set up."""
         if not self.is_ready:
             return None
-        return NotionSync(self.client(), self.store.get_pref(MEETINGS_DB), self.store.get_pref(TASKS_DB))
+        return NotionSync(self.client(), self.store.get_pref(MEETINGS_DB), self.store.get_pref(TASKS_DB),
+                          self.store.get_pref(FEATURES_DB))
+
+    @property
+    def features_ready(self) -> bool:
+        return self.is_ready and bool(self.store.get_pref(FEATURES_DB))
+
+    def features_parent(self) -> str:
+        """The page the databases live in. Workspaces connected before the tracker existed have no
+        Feature requests database yet; it's created there the first time a request is sent."""
+        parent = self.store.get_pref(PARENT_ID)
+        if not parent:
+            raise RuntimeError("Choose the Notion page again in Settings and create the databases.")
+        return parent
+
+    def remember_features_db(self, database_id: str) -> None:
+        self.store.set_pref(FEATURES_DB, database_id)
 
     def connect(self, token: str) -> str:
         """Check the token with Notion before saving it. Returns the integration's name."""
@@ -57,11 +74,13 @@ class NotionConnection:
         meetings, tasks = NotionSync.setup(self.client(), parent_id)
         self.store.set_pref(MEETINGS_DB, meetings)
         self.store.set_pref(TASKS_DB, tasks)
+        self.store.set_pref(FEATURES_DB, NotionSync.setup_features(self.client(), parent_id))
         self.store.set_pref(PARENT_TITLE, parent_title)
+        self.store.set_pref(PARENT_ID, parent_id)
 
     def disconnect(self) -> None:
         self.secrets.delete_secret(TOKEN)
-        for key in (MEETINGS_DB, TASKS_DB, PARENT_TITLE):
+        for key in (MEETINGS_DB, TASKS_DB, FEATURES_DB, PARENT_TITLE, PARENT_ID):
             self.store.set_pref(key, "")
         self._client = self._client_token = None
 
@@ -70,4 +89,5 @@ class NotionConnection:
             return "Not connected."
         if not self.is_ready:
             return "Token saved. Choose a page below and create the databases."
-        return f"Connected. Meetings and Tasks databases are in “{self.store.get_pref(PARENT_TITLE)}”."
+        return (f"Connected. Meetings, Tasks and Feature requests databases are in "
+                f"“{self.store.get_pref(PARENT_TITLE)}”.")

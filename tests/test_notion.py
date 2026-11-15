@@ -68,6 +68,9 @@ class FakeNotion:
                     "properties": body["properties"], "children": list(body.get("children", []))}
             self.pages[page_id] = page
             return httpx.Response(200, json=page)
+        if (m := re.fullmatch(r"/pages/([\w-]+)", path)) and request.method == "PATCH":
+            self.pages[m.group(1)]["properties"].update(body["properties"])
+            return httpx.Response(200, json=self.pages[m.group(1)])
         if m := re.fullmatch(r"/blocks/([\w-]+)/children", path):
             self.pages[m.group(1)]["children"] += body["children"]
             return httpx.Response(200, json={"results": body["children"]})

@@ -1,5 +1,5 @@
 """SQLite storage for rules, the approvals inbox, the activity log, tasks, email drafts,
-contacts and preferences."""
+contacts, the feature-request tracker and preferences."""
 
 from __future__ import annotations
 
@@ -30,13 +30,24 @@ CREATE TABLE IF NOT EXISTS drafts (
     gmail_id TEXT DEFAULT '', created_at TEXT, updated_at TEXT
 );
 CREATE TABLE IF NOT EXISTS contacts (name TEXT PRIMARY KEY COLLATE NOCASE, email TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS features (
+    id INTEGER PRIMARY KEY, title TEXT, detail TEXT DEFAULT '', status TEXT DEFAULT 'new',
+    notion_url TEXT DEFAULT '', created_at TEXT, updated_at TEXT
+);
+CREATE TABLE IF NOT EXISTS feature_mentions (
+    id INTEGER PRIMARY KEY, feature_id INTEGER REFERENCES features(id), meeting TEXT, folder TEXT,
+    date TEXT, requested_by TEXT, quote TEXT, timestamp TEXT, client TEXT, flagged INTEGER DEFAULT 0
+);
 """
+
+FEATURE_STATUSES = ["new", "planned", "in progress", "shipped", "declined"]
 
 # columns added after the first release; added to existing databases on open
 TASK_COLUMNS = {"due_date": "TEXT", "folder": "TEXT DEFAULT ''", "notion_url": "TEXT DEFAULT ''",
                 "updated_at": "TEXT", "reminded_on": "TEXT DEFAULT ''"}
 TASK_FIELDS = {"text", "owner", "due", "due_date", "status", "notion_url", "reminded_on"}
 DRAFT_FIELDS = {"to_addrs", "subject", "body", "status", "gmail_id", "recipient", "warning"}
+FEATURE_FIELDS = {"title", "detail", "status", "notion_url"}
 
 
 def now() -> str:
@@ -181,6 +192,62 @@ class Store:
         if "to_addrs" in fields and not isinstance(fields["to_addrs"], str):
             fields["to_addrs"] = json.dumps(fields["to_addrs"])
         self._update("drafts", DRAFT_FIELDS, draft_id, fields)
+
+    # feature-request tracker: one row per capability, one mention per time a meeting asked for it
+    def add_feature(self, title: str, detail: str = "") -> int:
+        cur = self.db.execute("INSERT INTO features (title, detail, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                              (title, detail, now(), now()))
+        self.db.commit()
+        return cur.lastrowid
+
+    def add_mention(self, feature_id: int, meeting: str, folder: str, date: str, requested_by: str,
+                    quote: str, timestamp: str, client: str, flagged: bool = False) -> bool:
+        """Records that a meeting asked for the feature. False if this meeting was already counted."""
+        if self.db.execute("SELECT 1 FROM feature_mentions WHERE feature_id = ? AND folder = ? AND meeting = ?",
+                           (feature_id, folder, meeting)).fetchone():
+            return False
+        self.db.execute(
+            "INSERT INTO feature_mentions (feature_id, meeting, folder, date, requested_by, quote, timestamp, "
+            "client, flagged) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (feature_id, meeting, folder, date, requested_by, quote, timestamp, client, int(flagged)),
+        )
+        self.db.execute("UPDATE features SET updated_at = ? WHERE id = ?", (now(), feature_id))
+        self.db.commit()
+        return True
+
+    def features(self) -> list[sqlite3.Row]:
+        """Every feature with how often and by whom it was asked, most asked first."""
+        return self.db.execute(
+            "SELECT f.*, COUNT(m.id) AS mentions, MAX(m.date) AS last_asked, "
+            "GROUP_CONCAT(DISTINCT NULLIF(m.client, '')) AS clients "
+            "FROM features f LEFT JOIN feature_mentions m ON m.feature_id = f.id "
+            "GROUP BY f.id ORDER BY mentions DESC, last_asked DESC"
+        ).fetchall()
+
+    def feature(self, feature_id: int) -> sqlite3.Row | None:
+        return next((r for r in self.features() if r["id"] == feature_id), None)
+
+    def mentions(self, feature_id: int) -> list[sqlite3.Row]:
+        return self.db.execute("SELECT * FROM feature_mentions WHERE feature_id = ? ORDER BY date DESC",
+                               (feature_id,)).fetchall()
+
+    def update_feature(self, feature_id: int, **fields) -> None:
+        if "status" in fields and fields["status"] not in FEATURE_STATUSES:
+            raise ValueError(f"Unknown status {fields['status']}")
+        self._update("features", FEATURE_FIELDS, feature_id, fields)
+
+    def merge_features(self, keep: int, drop: int) -> None:
+        """Two tracker entries turned out to be the same request: move every mention to `keep`."""
+        if keep == drop:
+            return
+        self.db.execute("UPDATE feature_mentions SET feature_id = ? WHERE feature_id = ?", (keep, drop))
+        self.db.execute("DELETE FROM features WHERE id = ?", (drop,))
+        self.db.commit()
+
+    def delete_feature(self, feature_id: int) -> None:
+        self.db.execute("DELETE FROM feature_mentions WHERE feature_id = ?", (feature_id,))
+        self.db.execute("DELETE FROM features WHERE id = ?", (feature_id,))
+        self.db.commit()
 
     # contacts, learned from attendee lists and from addresses typed into drafts
     def remember_contact(self, name: str, email: str) -> None:

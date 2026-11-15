@@ -42,6 +42,17 @@ def render_markdown(report: MeetingReport) -> str:
         out.append("- (none)")
     out.append("")
 
+    out.append("## Feature requests")
+    if report.feature_requests:
+        for f in report.feature_requests:
+            who = f" (asked by {f.requested_by})" if f.requested_by else ""
+            ts = f" `[{f.timestamp}]`" if f.timestamp else ""
+            flag = "  *(you flagged this)*" if f.flagged else ""
+            out.append(f"- **{f.title}**" + (f": {f.detail}" if f.detail else "") + who + ts + flag)
+    else:
+        out.append("- (none)")
+    out.append("")
+
     out.append("## Coverage of your flagged points")
     if report.coverage:
         for c in report.coverage:

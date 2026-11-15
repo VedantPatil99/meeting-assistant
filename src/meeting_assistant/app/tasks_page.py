@@ -15,6 +15,7 @@ from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox,
     QDateEdit,
+    QHeaderView,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -30,6 +31,7 @@ from PySide6.QtWidgets import (
 from ..automations.store import Store
 from ..scheduling import describe_due
 from ..session import MeetingSession
+from . import theme
 from .background import run_in_background
 
 GROUPS = ["Suggested from meetings", "Overdue", "Today", "Next 7 days", "Later", "No date", "Done"]
@@ -65,13 +67,15 @@ class TasksPage(QWidget):
         self.tree.setColumnWidth(1, 100)
         self.tree.setColumnWidth(2, 110)
         self.tree.setRootIsDecorated(True)
+        self.tree.header().setStretchLastSection(False)
+        self.tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.tree.currentItemChanged.connect(lambda item, _: self.select(item))
         new = QPushButton("New task")
         new.clicked.connect(self.new_task)
         self.schedule_all = QPushButton("Schedule all suggestions")
         self.schedule_all.clicked.connect(self.accept_all)
         top = QHBoxLayout()
-        top.addWidget(QLabel("<b>Tasks</b>"))
+        top.addWidget(theme.title("Tasks"))
         top.addStretch()
         top.addWidget(self.schedule_all)
         top.addWidget(new)
@@ -95,7 +99,7 @@ class TasksPage(QWidget):
         due_row.addWidget(self.has_date)
         due_row.addWidget(self.due, 1)
         self.said = QLabel()
-        self.said.setStyleSheet("color: palette(placeholder-text);")
+        theme.set_role(self.said, "muted")
         self.meeting = QLabel()
         self.meeting.setWordWrap(True)
         form = QFormLayout()
@@ -106,6 +110,7 @@ class TasksPage(QWidget):
         form.addRow("Meeting", self.meeting)
 
         self.schedule_button = QPushButton("Schedule")
+        theme.set_role(self.schedule_button, "primary")
         self.schedule_button.clicked.connect(lambda: self.save(status="open"))
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(lambda: self.save())
@@ -168,10 +173,10 @@ class TasksPage(QWidget):
                 item = QTreeWidgetItem([r["text"], r["owner"] or "", describe_due(due, today), r["meeting"] or ""])
                 item.setData(0, Qt.UserRole, r["id"])
                 if name == "Overdue":
-                    item.setForeground(2, QColor("#c62828"))
+                    item.setForeground(2, QColor(theme.tokens().danger))
                 if name == "Done":
                     for col in range(4):
-                        item.setForeground(col, QColor("#9e9e9e"))
+                        item.setForeground(col, QColor(theme.tokens().muted))
                 group.addChild(item)
                 if r["id"] == keep:
                     self.tree.setCurrentItem(item)

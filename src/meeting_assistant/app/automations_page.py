@@ -48,31 +48,10 @@ from ..automations.models import (
 )
 from ..automations.templates import builtin_templates
 from ..models import MeetingReport
+from . import theme
 
 
-def heading(text: str) -> QLabel:
-    label = QLabel(text)
-    label.setStyleSheet("font-size: 18px; font-weight: 600;")
-    return label
-
-
-def section(text: str) -> QLabel:
-    label = QLabel(text)
-    label.setStyleSheet("font-weight: 600; margin-top: 8px;")
-    return label
-
-
-def quiet(text: str) -> QLabel:
-    label = QLabel(text)
-    label.setWordWrap(True)
-    label.setStyleSheet("color: palette(placeholder-text);")
-    return label
-
-
-def card() -> QFrame:
-    frame = QFrame()
-    frame.setFrameShape(QFrame.StyledPanel)
-    return frame
+heading, section, quiet, card = theme.title, theme.section, theme.muted, theme.card
 
 
 def combo(items: dict, current=None) -> QComboBox:
@@ -285,7 +264,7 @@ class RuleEditor(QDialog):
 
         self.errors = QLabel()
         self.errors.setWordWrap(True)
-        self.errors.setStyleSheet("color: #e57373;")
+        theme.set_role(self.errors, "error")
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self._save)
         buttons.rejected.connect(self.reject)
@@ -479,6 +458,7 @@ class AutomationsPage(QWidget):
         self.tabs.addTab(self._tasks_tab(), "Tasks")
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(heading("Automations"))
         layout.addWidget(quiet("Rules run after each meeting is processed. Build them from the "
                                "dropdowns below; no code needed."))

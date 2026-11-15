@@ -2,6 +2,7 @@ from meeting_assistant.anchors import parse_anchors
 from meeting_assistant.models import ConflictVerdict, CoverageStatus, Point, Summary
 from meeting_assistant.pipeline import process_meeting
 from meeting_assistant.pipeline.conflicts import ConflictCheck
+from meeting_assistant.pipeline.features import FoundRequests
 from meeting_assistant.pipeline.coverage import CoverageCheck, RepairedPoint
 from meeting_assistant.report import render_markdown
 from meeting_assistant.transcript import parse_transcript
@@ -22,6 +23,7 @@ def base_answers(coverage):
         ConflictCheck: lambda p: ConflictCheck(
             note_says="-", transcript_final="-", verdict=ConflictVerdict.CONSISTENT
         ),
+        FoundRequests: lambda p: FoundRequests(requests=[]),
     }
 
 

@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSplitter,
     QStackedWidget,
     QSystemTrayIcon,
@@ -36,7 +37,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..after_meeting import save_suggestions
+from ..after_meeting import Outputs, save_features, save_suggestions
 from ..anchors import parse_anchors
 from ..automations import Engine, Prefs, Store, events_from_report
 from ..config import Settings
@@ -44,6 +45,7 @@ from ..gmail import GmailConnection
 from ..llm import LLMError, OllamaProvider
 from ..models import format_ts
 from ..pipeline import process_meeting
+from ..pipeline.features import link_to_tracker
 from ..pipeline.followups import suggest_followups
 from ..recorder import Recorder
 from ..session import MeetingInfo, MeetingSession
@@ -51,16 +53,20 @@ from ..transcript import parse_transcript
 from ..notion.connection import NotionConnection
 from .automations_page import AutomationsPage
 from .drafts_page import DraftsPage
+from .features_page import FeaturesPage
 from .gmail_settings import GmailSettings
 from .library_page import LibraryPage
 from .notion_settings import NotionSettings
 from .hotkeys import MOD_CONTROL, MOD_SHIFT, VK_SPACE, HotkeyThread
+from . import theme
 from .quick_anchor import QuickAnchor, mark_internal
+from .sidebar import Sidebar
 from .tasks_page import TasksPage
 
 MEETING_TYPES = ["client feedback", "general", "standup", "sprint planning", "1:1"]
-NAV = ["Meeting", "Meetings", "Tasks", "Drafts", "Automations", "Settings"]
-NAV_TASKS, NAV_DRAFTS, NAV_AUTOMATIONS = 2, 3, 4
+NAV = ["Meeting", "Meetings", "Tasks", "Drafts", "Feature requests", "Automations", "Settings"]
+NAV_ICONS = ["\uE720", "\uE8F1", "\uE9D5", "\uE715", "\uE82F", "\uE945", "\uE713"]
+NAV_TASKS, NAV_DRAFTS, NAV_FEATURES, NAV_AUTOMATIONS = 2, 3, 4, 5
 HOTKEY_NOTE = 1
 HOTKEY_LABEL = "Ctrl+Shift+Space"
 
@@ -77,21 +83,32 @@ def dot_icon(color: str) -> QIcon:
     return QIcon(pixmap)
 
 
-def heading(text: str) -> QLabel:
-    label = QLabel(text)
-    label.setStyleSheet("font-size: 18px; font-weight: 600;")
-    return label
+def card_layout(*rows) -> QWidget:
+    """A card holding widgets and layouts, top to bottom."""
+    frame = theme.card()
+    inner = QVBoxLayout(frame)
+    inner.setContentsMargins(18, 16, 18, 16)
+    inner.setSpacing(10)
+    for row in rows:
+        if isinstance(row, QWidget):
+            inner.addWidget(row)
+        else:
+            inner.addLayout(row)
+    return frame
 
 
 class ProcessWorker(QObject):
-    """Transcribes the recording if needed, runs the pipeline, then drafts follow-ups, off the UI thread."""
+    """Transcribes the recording if needed, runs the pipeline, drafts follow-ups and matches
+    feature requests to the tracker, all off the UI thread. Everything it needs from the
+    database is read beforehand and passed in."""
 
     progress = Signal(str)
-    finished = Signal(object, object)  # MeetingReport, list[SuggestedEmail]
+    finished = Signal(object, object)  # MeetingReport, Outputs
     failed = Signal(str)
 
     def __init__(self, settings: Settings, anchors_text: str, title: str, meeting_type: str,
-                 session: MeetingSession, attendees: list[str], prefs: Prefs, contacts: dict[str, str]):
+                 session: MeetingSession, attendees: list[str], prefs: Prefs, contacts: dict[str, str],
+                 tracked: list[tuple[int, str, str]]):
         super().__init__()
         self.settings = settings
         self.anchors_text = anchors_text
@@ -101,6 +118,7 @@ class ProcessWorker(QObject):
         self.attendees = attendees
         self.prefs = prefs
         self.contacts = contacts
+        self.tracked = tracked
 
     def run(self) -> None:
         try:
@@ -126,7 +144,11 @@ class ProcessWorker(QObject):
                                        meeting_date=self.session.load_info().started_at)
         except LLMError:
             emails = []  # the summary is still useful without drafts
-        self.finished.emit(report, emails)
+        try:
+            links = link_to_tracker(provider, report.feature_requests, self.tracked, self.progress.emit)
+        except LLMError:
+            links = [None] * len(report.feature_requests)  # unmatched requests are added as new
+        self.finished.emit(report, Outputs(emails, links))
 
     def _transcript(self):
         if self.session.transcript_file.exists():
@@ -146,7 +168,7 @@ class ProcessWorker(QObject):
 
 class MeetingPage(QWidget):
     recording_changed = Signal(bool)
-    processed = Signal(object, str, list, object, object)  # report, date, attendees, folder, follow-up emails
+    processed = Signal(object, str, list, object, object)  # report, date, attendees, folder, Outputs
 
     def __init__(self, settings: Settings, store: Store):
         super().__init__()
@@ -168,19 +190,20 @@ class MeetingPage(QWidget):
         form.addRow("Attendees", self.attendees_edit)
 
         self.record_button = QPushButton("Start recording")
-        self.record_button.setMinimumHeight(36)
+        theme.set_role(self.record_button, "primary")
+        self.record_button.setMinimumHeight(38)
         self.record_button.clicked.connect(self.toggle_recording)
-        self.clock = QLabel("00:00:00")
-        self.clock.setStyleSheet("font-size: 20px; font-weight: 600; font-family: Consolas, monospace;")
+        self.clock = theme.label("00:00:00", "clock")
         self.mic_level = self._meter()
         self.system_level = self._meter()
         meters = QGridLayout()
-        meters.addWidget(QLabel("Your mic"), 0, 0)
+        meters.addWidget(theme.label("Your mic", "muted"), 0, 0)
         meters.addWidget(self.mic_level, 0, 1)
-        meters.addWidget(QLabel("Call audio"), 1, 0)
+        meters.addWidget(theme.label("Call audio", "muted"), 1, 0)
         meters.addWidget(self.system_level, 1, 1)
         record_row = QHBoxLayout()
         record_row.addWidget(self.record_button, 1)
+        record_row.addSpacing(12)
         record_row.addWidget(self.clock)
 
         self.anchor_input = QLineEdit()
@@ -198,7 +221,8 @@ class MeetingPage(QWidget):
         )
 
         self.process_button = QPushButton("Process meeting")
-        self.process_button.setMinimumHeight(36)
+        theme.set_role(self.process_button, "primary")
+        self.process_button.setMinimumHeight(38)
         self.process_button.setEnabled(False)
         self.process_button.clicked.connect(self.process)
         open_transcript = QPushButton("Use a transcript file…")
@@ -209,17 +233,15 @@ class MeetingPage(QWidget):
         actions = QHBoxLayout()
         actions.addWidget(open_transcript)
         actions.addWidget(self.open_folder_button)
-        self.status = QLabel("Ready")
-        self.status.setWordWrap(True)
+        self.status = theme.muted("Ready")
 
+        notes_card = card_layout(theme.section("Your notes"), note_row, self.anchors_edit)
         left = QVBoxLayout()
-        left.addWidget(heading("Meeting"))
-        left.addLayout(form)
-        left.addLayout(record_row)
-        left.addLayout(meters)
-        left.addWidget(QLabel("Your notes (anchors)"))
-        left.addLayout(note_row)
-        left.addWidget(self.anchors_edit, 1)
+        left.setContentsMargins(0, 0, 0, 0)
+        left.setSpacing(12)
+        left.addWidget(theme.title("Meeting"))
+        left.addWidget(card_layout(form, record_row, meters))
+        left.addWidget(notes_card, 1)
         left.addWidget(self.process_button)
         left.addLayout(actions)
         left.addWidget(self.status)
@@ -233,7 +255,7 @@ class MeetingPage(QWidget):
         splitter = QSplitter()
         splitter.addWidget(left_widget)
         splitter.addWidget(self.report_view)
-        splitter.setSizes([440, 640])
+        splitter.setSizes([460, 620])
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
@@ -277,7 +299,7 @@ class MeetingPage(QWidget):
         self.anchors_edit.clear()
         self.report_view.clear()
         self.record_button.setText("Stop recording")
-        self.record_button.setStyleSheet("background: #c62828; color: white; font-weight: 600;")
+        theme.set_role(self.record_button, "danger")
         self.process_button.setEnabled(False)
         self.open_folder_button.setEnabled(True)
         self.status.setText(f"Recording to {self.session.folder}")
@@ -292,7 +314,7 @@ class MeetingPage(QWidget):
         self.session.save_info(info)
         self.session.save_anchors(self.anchors_edit.toPlainText())
         self.record_button.setText("Start recording")
-        self.record_button.setStyleSheet("")
+        theme.set_role(self.record_button, "primary")
         self.mic_level.setValue(0)
         self.system_level.setValue(0)
         self.process_button.setEnabled(True)
@@ -330,8 +352,8 @@ class MeetingPage(QWidget):
         self.type_combo.setCurrentText(info.meeting_type)
         self.attendees_edit.setText(", ".join(info.attendees))
         self.anchors_edit.setPlainText(session.load_anchors())
-        self.report_view.setMarkdown(session.report_file.read_text(encoding="utf-8")
-                                     if session.report_file.exists() else "")
+        theme.set_markdown(self.report_view, session.report_file.read_text(encoding="utf-8")
+                           if session.report_file.exists() else "")
         self.process_button.setEnabled(True)
         self.open_folder_button.setEnabled(True)
         self.status.setText(f"Opened “{info.title}”. Edit your notes, then process.")
@@ -367,6 +389,7 @@ class MeetingPage(QWidget):
             self.settings, self.anchors_edit.toPlainText(), self.title_edit.text(),
             self.type_combo.currentText(), self.session, self.attendees(),
             self.store.prefs(), self.store.contacts(),
+            [(f["id"], f["title"], f["detail"]) for f in self.store.features()],
         )
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
@@ -377,13 +400,13 @@ class MeetingPage(QWidget):
         self.worker.failed.connect(self.thread.quit)
         self.thread.start()
 
-    def _show_report(self, report, emails) -> None:
+    def _show_report(self, report, outputs) -> None:
         markdown = self.session.save_report(report)
-        self.report_view.setMarkdown(markdown)
+        theme.set_markdown(self.report_view, markdown)
         self.status.setText("Done.")
         self._processing_done()
         self.processed.emit(report, self.session.load_info().started_at, self.attendees(),
-                            self.session.folder, emails)
+                            self.session.folder, outputs)
 
     def _show_error(self, message: str) -> None:
         self.status.setText(f"Error: {message}")
@@ -411,24 +434,26 @@ class SettingsPage(QWidget):
         self.company_domain = QLineEdit(prefs.company_domain)
         self.company_domain.setPlaceholderText("yourcompany.com")
         save = QPushButton("Save")
+        theme.set_role(save, "primary")
         save.clicked.connect(self.save_prefs)
-        self.prefs_status = QLabel("")
+        self.prefs_status = theme.label("", "muted")
         you = QFormLayout()
         you.addRow("Your email", self.my_email)
         you.addRow("Company email domain", self.company_domain)
-        you.addRow("", save)
+        save_row = QHBoxLayout()
+        save_row.addWidget(save)
+        save_row.addStretch()
+        you.addRow("", save_row)
         you.addRow("", self.prefs_status)
-        explain = QLabel("Attendees whose email ends with your company domain count as internal. "
-                         "Everyone else is external, so internal notes never reach them.")
-        explain.setWordWrap(True)
-        explain.setStyleSheet("color: palette(placeholder-text);")
+        explain = theme.muted("Attendees whose email ends with your company domain count as internal. "
+                              "Everyone else is external, so internal notes never reach them.")
 
         form = QFormLayout()
         form.addRow("AI model", QLabel(f"{settings.ollama_model}  (Ollama at {settings.ollama_host})"))
         form.addRow("Speech to text", QLabel(f"faster-whisper {settings.whisper_model}, device: {settings.whisper_device}"))
         form.addRow("Meetings folder", QLabel(str(settings.meetings_dir)))
         form.addRow("Add-note shortcut", QLabel(HOTKEY_LABEL))
-        self.model_status = QLabel("")
+        self.model_status = theme.label("", "muted")
         check = QPushButton("Check AI model")
         check.clicked.connect(self.check_model)
         open_folder = QPushButton("Open meetings folder")
@@ -437,27 +462,29 @@ class SettingsPage(QWidget):
         buttons.addWidget(check)
         buttons.addWidget(open_folder)
         buttons.addStretch()
-        note = QLabel("Change these in a .env file next to the app (see .env.example).")
-        note.setStyleSheet("color: palette(placeholder-text);")
+        note = theme.muted("Change these in a .env file next to the app (see .env.example).")
 
+        column = QWidget()
+        column.setMaximumWidth(860)
+        cards = QVBoxLayout(column)
+        cards.setContentsMargins(0, 0, 8, 0)
+        cards.setSpacing(14)
+        cards.addWidget(theme.title("Settings"))
+        cards.addWidget(card_layout(theme.section("You"), you, explain))
+        cards.addWidget(card_layout(theme.section("Gmail"),
+                                    theme.muted("Optional: put follow-ups in your Gmail Drafts or send them."),
+                                    self.gmail))
+        cards.addWidget(card_layout(theme.section("Notion"),
+                                    theme.muted("Optional: also keep meetings, tasks and feature requests in Notion."),
+                                    self.notion))
+        cards.addWidget(card_layout(theme.section("Models and storage"), form, buttons, self.model_status, note))
+        cards.addStretch()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(column)
         layout = QVBoxLayout(self)
-        layout.addWidget(heading("Settings"))
-        layout.addWidget(QLabel("<b>You</b>"))
-        layout.addLayout(you)
-        layout.addWidget(explain)
-        layout.addSpacing(16)
-        layout.addWidget(QLabel("<b>Gmail</b> (optional: send follow-ups from the app)"))
-        layout.addWidget(self.gmail)
-        layout.addSpacing(16)
-        layout.addWidget(QLabel("<b>Notion</b> (optional: also keep meetings and tasks in Notion)"))
-        layout.addWidget(self.notion)
-        layout.addSpacing(16)
-        layout.addWidget(QLabel("<b>Models and storage</b>"))
-        layout.addLayout(form)
-        layout.addLayout(buttons)
-        layout.addWidget(self.model_status)
-        layout.addWidget(note)
-        layout.addStretch()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(scroll)
 
     def save_prefs(self) -> None:
         self.store.save_prefs(Prefs(my_email=self.my_email.text().strip(),
@@ -480,11 +507,12 @@ class MainWindow(QMainWindow):
     def __init__(self, settings: Settings):
         super().__init__()
         self.setWindowTitle("Meeting Assistant")
-        self.resize(1180, 740)
+        self.resize(1240, 780)
         self.idle_icon, self.recording_icon = dot_icon("#9e9e9e"), dot_icon("#e53935")
         self.setWindowIcon(self.idle_icon)
 
         self.store = Store(settings.meetings_dir / "assistant.db")
+        theme.apply(QApplication.instance(), self.store.get_pref("theme") or "system")
         self.notion = NotionConnection(self.store)
         self.engine = Engine(self.store, settings.meetings_dir / "outputs", notifier=self.notify,
                              notion=self.notion.sync)
@@ -500,25 +528,36 @@ class MainWindow(QMainWindow):
         self.tasks.counts_changed.connect(lambda n: self._badge(NAV_TASKS, n))
         self.drafts = DraftsPage(self.store, self.gmail)
         self.drafts.count_changed.connect(lambda n: self._badge(NAV_DRAFTS, n))
+        self.features = FeaturesPage(self.store, self.notion)
+        self.features.new_count_changed.connect(lambda n: self._badge(NAV_FEATURES, n))
         self.automations = AutomationsPage(self.store, self.engine, settings.meetings_dir)
         self.automations.approvals_changed.connect(lambda n: self._badge(NAV_AUTOMATIONS, n))
         self.settings_page = SettingsPage(settings, self.store, self.notion, self.gmail)
         self.settings_page.gmail.changed.connect(self.drafts.refresh)
         self.pages = QStackedWidget()
-        for page in (self.meeting, self.library, self.tasks, self.drafts, self.automations, self.settings_page):
+        for page in (self.meeting, self.library, self.tasks, self.drafts, self.features, self.automations,
+                     self.settings_page):
             self.pages.addWidget(page)
 
-        self.nav = QListWidget()
-        self.nav.addItems(NAV)
-        self.nav.setFixedWidth(160)
-        self.nav.setStyleSheet("QListWidget { font-size: 14px; } QListWidget::item { padding: 10px; }")
+        self.sidebar = Sidebar(list(zip(NAV, NAV_ICONS)), theme.mode())
+        self.sidebar.mode_changed.connect(self._set_theme)
+        self.nav = self.sidebar.list
         self.nav.currentRowChanged.connect(self.pages.setCurrentIndex)
         self.nav.setCurrentRow(0)
+        theme.on_change(self._recolour)
 
+        content = QWidget()
+        content.setObjectName("content")
+        content.setAttribute(Qt.WA_StyledBackground)
+        padded = QVBoxLayout(content)
+        padded.setContentsMargins(28, 22, 28, 22)
+        padded.addWidget(self.pages)
         body = QWidget()
         row = QHBoxLayout(body)
-        row.addWidget(self.nav)
-        row.addWidget(self.pages, 1)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(0)
+        row.addWidget(self.sidebar)
+        row.addWidget(content, 1)
         self.setCentralWidget(body)
 
         self.quick = QuickAnchor()
@@ -529,7 +568,7 @@ class MainWindow(QMainWindow):
         self.hotkeys.start()
 
         self.tray = self._make_tray() if QSystemTrayIcon.isSystemTrayAvailable() else None
-        for page in (self.automations, self.tasks, self.drafts):
+        for page in (self.automations, self.tasks, self.drafts, self.features):
             page.refresh()
 
         self.reminders = QTimer(self)
@@ -542,10 +581,15 @@ class MainWindow(QMainWindow):
         if self.tray:
             self.tray.showMessage(title, message)
 
-    def _after_meeting(self, report, date: str, attendees: list, folder, emails) -> None:
-        tasks, drafts = save_suggestions(self.store, report, date, folder, emails)
+    def _after_meeting(self, report, date: str, attendees: list, folder, outputs) -> None:
+        tasks, drafts = save_suggestions(self.store, report, date, folder, outputs.emails)
+        new, repeats = save_features(self.store, report, date, folder, attendees, self.store.prefs(),
+                                     outputs.feature_links)
         parts = [f"{tasks} task{'s' if tasks != 1 else ''} to schedule in Tasks",
                  f"{drafts} follow-up draft{'s' if drafts != 1 else ''} in Drafts"]
+        if new or repeats:
+            parts.append(f"{new} new feature request{'s' if new != 1 else ''}"
+                         + (f", {repeats} asked for again" if repeats else ""))
         outcomes = self.engine.handle(events_from_report(report, date, attendees, folder))
         if outcomes:
             counts: dict[str, int] = {}
@@ -553,7 +597,7 @@ class MainWindow(QMainWindow):
                 counts[o.status] = counts.get(o.status, 0) + 1
             parts.append("automations: " + ", ".join(f"{n} {status}" for status, n in counts.items()))
         self.meeting.status.setText("Done. " + "; ".join(parts) + ".")
-        for page in (self.automations, self.tasks, self.drafts):
+        for page in (self.automations, self.tasks, self.drafts, self.features):
             page.refresh()
         self.library.refresh(select=folder)
 
@@ -562,7 +606,17 @@ class MainWindow(QMainWindow):
         self.nav.setCurrentRow(NAV.index("Meeting"))
 
     def _badge(self, row: int, count: int) -> None:
-        self.nav.item(row).setText(f"{NAV[row]} ({count})" if count else NAV[row])
+        self.sidebar.set_badge(row, count)
+
+    def _set_theme(self, mode: str) -> None:
+        self.store.set_pref("theme", mode)
+        theme.apply(QApplication.instance(), mode)
+
+    def _recolour(self) -> None:
+        """Lists that colour some rows in code pick up the new theme's colours."""
+        for page in (self.tasks, self.drafts):
+            page.refresh()
+        self.nav.viewport().update()
 
     def remind_due_tasks(self) -> None:
         today = date.today().isoformat()

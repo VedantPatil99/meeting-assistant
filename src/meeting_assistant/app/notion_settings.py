@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from ..notion import NotionError
 from ..notion.connection import NotionConnection
+from . import theme
 
 STEPS = (
     "1. Go to notion.so/my-integrations, create an internal integration and copy its secret.\n"
@@ -32,7 +33,7 @@ class NotionSettings(QWidget):
         self.status.setWordWrap(True)
         steps = QLabel(STEPS)
         steps.setWordWrap(True)
-        steps.setStyleSheet("color: palette(placeholder-text);")
+        theme.set_role(steps, "muted")
         steps.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.token = QLineEdit()
@@ -47,7 +48,7 @@ class NotionSettings(QWidget):
         self.pages = QComboBox()
         self.refresh_pages = QPushButton("Find pages")
         self.refresh_pages.clicked.connect(self.load_pages)
-        self.create_button = QPushButton("Create Meetings and Tasks databases here")
+        self.create_button = QPushButton("Create the databases here")
         self.create_button.clicked.connect(self.create_databases)
         page_row = QHBoxLayout()
         page_row.addWidget(self.pages, 1)
@@ -111,7 +112,7 @@ class NotionSettings(QWidget):
         if self.pages.currentData() is None:
             self.status.setText("Pick a page first. Press “Find pages” if the list is empty.")
             return
-        self._busy("Creating the Meetings and Tasks databases…")
+        self._busy("Creating the Meetings, Tasks and Feature requests databases…")
         try:
             self.connection.create_databases(self.pages.currentData(), self.pages.currentText())
         except NotionError as e:

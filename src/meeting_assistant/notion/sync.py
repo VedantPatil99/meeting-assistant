@@ -2,6 +2,7 @@
 
 Meetings: one page per meeting, with the full report as the page body.
 Tasks: one row per action item, linked back to its meeting page.
+Feature requests: one row per tracked request, with how often and by whom it was asked.
 Writes are idempotent: a meeting or task that already exists is found and reused, so a
 re-run or a second approval does not create duplicates.
 """
@@ -58,6 +59,20 @@ def tasks_schema(meetings_db: str) -> dict:
     }
 
 
+FEATURE_STATUSES = ["new", "planned", "in progress", "shipped", "declined"]
+
+
+def features_schema() -> dict:
+    return {
+        "Request": {"title": {}},
+        "Detail": {"rich_text": {}},
+        "Status": {"select": {"options": [{"name": s} for s in FEATURE_STATUSES]}},
+        "Times asked": {"number": {}},
+        "Clients": {"rich_text": {}},
+        "Last asked": {"date": {}},
+    }
+
+
 def report_blocks(report: MeetingReport) -> list[dict]:
     s = report.summary
     anchors = {a.id: a for a in report.anchors}
@@ -92,10 +107,11 @@ def report_blocks(report: MeetingReport) -> list[dict]:
 
 
 class NotionSync:
-    def __init__(self, client: NotionClient, meetings_db: str, tasks_db: str):
+    def __init__(self, client: NotionClient, meetings_db: str, tasks_db: str, features_db: str = ""):
         self.client = client
         self.meetings_db = meetings_db
         self.tasks_db = tasks_db
+        self.features_db = features_db
 
     @staticmethod
     def setup(client: NotionClient, parent_page_id: str) -> tuple[str, str]:
@@ -103,6 +119,10 @@ class NotionSync:
         meetings = client.create_database(parent_page_id, "Meetings", meetings_schema())
         tasks = client.create_database(parent_page_id, "Tasks", tasks_schema(meetings))
         return meetings, tasks
+
+    @staticmethod
+    def setup_features(client: NotionClient, parent_page_id: str) -> str:
+        return client.create_database(parent_page_id, "Feature requests", features_schema())
 
     def check(self) -> None:
         self.client.get_database(self.meetings_db)
@@ -151,3 +171,23 @@ class NotionSync:
         if meeting:
             props["Meeting"] = {"relation": [{"id": meeting["id"]}]}
         return self.client.create_page(self.tasks_db, props)["url"]
+
+    def save_feature(self, title: str, detail: str, status: str, times_asked: int, clients: str,
+                     last_asked: str) -> str:
+        """Create the request's row, or update it if a row with this title exists. Returns its URL."""
+        if not self.features_db:
+            raise RuntimeError("The Feature requests database isn't set up. Create it in Settings > Notion.")
+        props = {
+            "Request": {"title": rich(title)},
+            "Detail": {"rich_text": rich(detail)},
+            "Status": {"select": {"name": status}},
+            "Times asked": {"number": times_asked},
+            "Clients": {"rich_text": rich(clients)},
+        }
+        if last_asked:
+            props["Last asked"] = {"date": {"start": last_asked[:10]}}
+        existing = self.client.query(self.features_db, {"property": "Request", "title": {"equals": title}})
+        if existing:
+            self.client.update_page(existing[0]["id"], props)
+            return existing[0]["url"]
+        return self.client.create_page(self.features_db, props)["url"]

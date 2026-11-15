@@ -1,15 +1,16 @@
 # Meeting Assistant
 
 An offline AI meeting assistant for Windows. It records the meeting, transcribes it, and turns it
-into a summary, **scheduled tasks** and **follow-up email drafts** for the right people.
+into a summary, **scheduled tasks**, **follow-up email drafts** for the right people, and a
+**feature-request tracker** that counts how often clients ask for the same thing.
 
 During the meeting you type quick **anchors**, the points you know matter, and can mark any of
 them **internal** so they never reach people outside your company. Afterwards the assistant
 **verifies** that every anchor made it into the summary and flags anchors that contradict what was
 actually said.
 
-Everything works inside the app. **Gmail** (send follow-ups) and **Notion** (keep meetings and
-tasks there too) are optional connectors.
+Everything works inside the app. **Gmail** (send follow-ups) and **Notion** (keep meetings,
+tasks and feature requests there too) are optional connectors.
 
 Everything runs locally and costs nothing: a local LLM through [Ollama](https://ollama.com) and
 local speech-to-text through [faster-whisper](https://github.com/SYSTRAN/faster-whisper).
@@ -95,8 +96,14 @@ outside your company.
 | Meetings | Every past meeting: summary, full transcript, your notes (internal ones highlighted), search, reprocess with edited notes |
 | Tasks | Action items become **suggested** tasks with real due dates. Schedule or dismiss them, add your own, mark them done. Tasks due today trigger a tray reminder |
 | Drafts | One follow-up email per suggested person, with the reason they were picked. Edit, copy, put in Gmail Drafts, or send |
+| Feature requests | Every request clients made, most asked first, with who asked, when, and its status |
 | Automations | No-code rules (below) |
 | Settings | Your email and company domain, Gmail, Notion, models |
+
+The look is a light and a dark theme built from one set of colour tokens (`app/theme.py`):
+widgets get a role such as `primary` or `card` and the stylesheet styles the role, so no page
+hard-codes a colour. The switch at the bottom of the sidebar picks Light, Dark or Match Windows.
+It uses fonts that ship with Windows 11 (Segoe UI Variable and Segoe Fluent Icons for the icons).
 
 ### Tasks and due dates
 The model copies the due date as said ("by Friday", "end of next week", "15/12"); a small
@@ -113,6 +120,21 @@ For external recipients, the model drafts from a summary with every line that ca
 internal note removed, and never sees the internal notes. A final check compares each external
 draft against your internal notes and shows a warning if one seems to have slipped through.
 
+### Feature requests
+Each meeting is searched for things a client asked the product to do that it doesn't do yet
+(bug reports, slowness and pricing are left out). The model quotes the line first, then names
+the request; the speaker and timestamp are taken from the closest transcript line. Every `fr:`
+note ends up in the list even if the model missed it.
+
+New requests are matched against the tracker so a repeat is counted instead of added twice.
+Word overlap settles the clear cases for free. A request is linked automatically only when most
+of its words are shared **both ways**, because one-way overlap called "Export reports to Excel"
+a repeat of "Export reports as PDF". A possible match goes to the model with at most three
+candidates, and it counts extra options ("by email or Teams") as the same need but a different
+core capability as new. The **Feature requests** page lists requests by how often they were
+asked, by which clients and when, with a status (new, planned, in progress, shipped, declined),
+merge and an optional Notion database.
+
 ### Gmail (optional)
 Uses your own free Google Cloud OAuth client, so nothing is shared with a third party:
 1. In [Google Cloud Console](https://console.cloud.google.com), create a project and enable the **Gmail API**.
@@ -127,9 +149,10 @@ Google expires the sign-in after 7 days and you press Connect again.
 
 ### Notion (optional)
 Settings > Notion: paste an internal integration secret, pick a page shared with it, and the app
-creates linked **Meetings** and **Tasks** databases there. Use the **Add to Notion** button on a
-task, or the "Save to Notion" automation actions. Saving the same meeting or task twice doesn't
-duplicate it.
+creates linked **Meetings** and **Tasks** databases and a **Feature requests** database there.
+Use the **Add to Notion** button on a task or feature request, or the "Save to Notion"
+automation actions. Saving the same meeting, task or request twice doesn't duplicate it; a
+feature request already in Notion is updated with its latest count and status.
 
 Speech-to-text uses the GPU when NVIDIA's cuBLAS and cuDNN libraries are installed, and falls
 back to the CPU otherwise.
@@ -176,5 +199,5 @@ The tests use a fake provider, so they run without Ollama.
 - [x] Tasks with parsed due dates and reminders
 - [x] Follow-up drafts for suggested recipients, internal notes filtered and leak-checked
 - [x] Gmail connector: drafts and send
-- [ ] Feature-request detection and deduplication into a tracker
+- [x] Feature-request detection and deduplication into a tracker
 - [ ] Evaluation set: coverage %, action-item precision/recall, dedup accuracy

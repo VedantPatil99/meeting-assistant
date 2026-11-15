@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 from ..gmail import GmailConnection, GmailError
+from . import theme
 from .background import run_in_background
 
 STEPS = (
@@ -26,7 +27,7 @@ class GmailSettings(QWidget):
         self.connection = connection
         steps = QLabel(STEPS)
         steps.setWordWrap(True)
-        steps.setStyleSheet("color: palette(placeholder-text);")
+        theme.set_role(steps, "muted")
         steps.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.client_id = QLineEdit()

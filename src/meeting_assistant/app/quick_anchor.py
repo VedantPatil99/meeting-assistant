@@ -6,6 +6,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
+from . import theme
+
 
 def mark_internal(text: str) -> str:
     """Turns a note into an internal one, replacing any other note type it had."""
@@ -26,10 +28,11 @@ class QuickAnchor(QWidget):
         frame = QFrame(self)
         frame.setObjectName("quickFrame")
         frame.setStyleSheet(
-            "#quickFrame { background: palette(window); border: 1px solid palette(mid); border-radius: 8px; }"
+            "#quickFrame { background: palette(base); border: 1px solid palette(mid); border-radius: 12px; }"
         )
         self.hint = QLabel("Note  ·  ! must include   ctx: background   internal:   fr: feature request")
-        self.hint.setStyleSheet("color: palette(placeholder-text); font-size: 11px;")
+        theme.set_role(self.hint, "muted")
+        self.hint.setStyleSheet("font-size: 11px;")
         self.input = QLineEdit()
         self.input.setMinimumWidth(460)
         self.input.setPlaceholderText("Type and press Enter, Esc to cancel")

@@ -8,12 +8,21 @@ drafts stay local until the user creates them in Gmail or presses Send.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 
+from .automations.context import Prefs
 from .automations.store import Store
 from .models import MeetingReport
 from .pipeline.followups import SuggestedEmail
 from .scheduling import resolve_due
+
+
+@dataclass
+class Outputs:
+    """What processing produces besides the report."""
+    emails: list[SuggestedEmail] = field(default_factory=list)
+    feature_links: list[int | None] = field(default_factory=list)  # tracked feature per request, or None
 
 
 def save_suggestions(store: Store, report: MeetingReport, date: str, folder: Path | None,
@@ -31,6 +40,33 @@ def save_suggestions(store: Store, report: MeetingReport, date: str, folder: Pat
         store.add_draft(report.title, str(folder or ""), email.recipient, email.to, email.reason,
                         email.subject, email.body, email.audience, email.warning)
     return tasks, len(emails)
+
+
+def client_names(attendees: list[str], prefs: Prefs) -> str:
+    """The outside companies in the meeting, by email domain: "finedge.com, other.io".
+    Your own email's domain never counts, even before a company domain is set."""
+    mine = prefs.my_email.split("@")[-1].lower() if "@" in prefs.my_email else None
+    domains = sorted({a.split("@")[-1].lower() for a in attendees
+                      if "@" in a and not prefs.is_internal(a)} - {mine})
+    return ", ".join(domains)
+
+
+def save_features(store: Store, report: MeetingReport, date: str, folder: Path | None,
+                  attendees: list[str], prefs: Prefs, links: list[int | None]) -> tuple[int, int]:
+    """Adds the meeting's feature requests to the tracker. `links[i]` is the tracked feature that
+    request i repeats, or None for a new one. Returns (new features, repeats of known ones)."""
+    new = repeats = 0
+    client = client_names(attendees, prefs)
+    for request, link in zip(report.feature_requests, links):
+        feature_id = link if link is not None and store.feature(link) else None
+        if feature_id is None:
+            feature_id = store.add_feature(request.title, request.detail)
+            new += 1
+        else:
+            repeats += 1
+        store.add_mention(feature_id, report.title, str(folder or ""), date, request.requested_by or "",
+                          request.quote or "", request.timestamp or "", client, request.flagged)
+    return new, repeats
 
 
 def recipients(row) -> list[str]:

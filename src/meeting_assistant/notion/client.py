@@ -105,6 +105,9 @@ class NotionClient:
         self.append_blocks(page["id"], children[MAX_BLOCKS:])
         return page
 
+    def update_page(self, page_id: str, properties: dict) -> dict:
+        return self._request("PATCH", f"/pages/{page_id}", {"properties": properties})
+
     def append_blocks(self, block_id: str, children: list[dict]) -> None:
         for i in range(0, len(children), MAX_BLOCKS):
             self._request("PATCH", f"/blocks/{block_id}/children", {"children": children[i:i + MAX_BLOCKS]})

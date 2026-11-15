@@ -111,6 +111,22 @@ class ConflictResult(BaseModel):
     timestamp: str | None = None
 
 
+class FeatureRequest(BaseModel):
+    title: str                      # short name, e.g. "Export reports to Excel"
+    detail: str = ""                # what they want it for
+    requested_by: str | None = None
+    quote: str | None = None        # the transcript line it comes from
+    timestamp: str | None = None
+    flagged: bool = False           # you also marked it with an fr: note
+
+    @field_validator("requested_by")
+    @classmethod
+    def blank_if_not_given(cls, value: str | None) -> str | None:
+        if value is None or value.strip().lower().rstrip(".") in NOT_GIVEN:
+            return None
+        return value.strip()
+
+
 class MeetingReport(BaseModel):
     title: str
     meeting_type: str
@@ -118,6 +134,7 @@ class MeetingReport(BaseModel):
     summary: Summary
     coverage: list[CoverageResult]
     conflicts: list[ConflictResult]
+    feature_requests: list[FeatureRequest] = []  # empty in reports saved before this existed
 
     @property
     def coverage_rate_before_repair(self) -> float:

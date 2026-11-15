@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 from .. import after_meeting
 from ..automations.store import Store
 from ..gmail import GmailConnection
+from . import theme
 from .background import run_in_background
 
 STATUS_LABEL = {"draft": "", "in gmail": "  ·  in Gmail Drafts"}
@@ -48,20 +49,21 @@ class DraftsPage(QWidget):
 
         self.list = QListWidget()
         self.list.setWordWrap(True)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.list.currentItemChanged.connect(lambda item, previous: self.select(item, previous))
         left = QVBoxLayout()
         left.setContentsMargins(0, 0, 0, 0)
-        left.addWidget(QLabel("<b>Follow-up drafts</b>"))
+        left.addWidget(theme.title("Follow-up drafts"))
         left.addWidget(self.list)
         left_widget = QWidget()
         left_widget.setLayout(left)
 
         self.reason = QLabel()
         self.reason.setWordWrap(True)
-        self.reason.setStyleSheet("color: palette(placeholder-text);")
+        theme.set_role(self.reason, "muted")
         self.warning = QLabel()
         self.warning.setWordWrap(True)
-        self.warning.setStyleSheet("background: #fff3e0; color: #8a4b00; padding: 6px; border-radius: 4px;")
+        theme.set_role(self.warning, "warning")
         self.to = QLineEdit()
         self.to.setPlaceholderText("Recipient email(s), comma separated")
         self.subject = QLineEdit()
@@ -77,7 +79,7 @@ class DraftsPage(QWidget):
         self.gmail_button = QPushButton("Put in Gmail Drafts")
         self.gmail_button.clicked.connect(self.to_gmail)
         self.send_button = QPushButton("Send with Gmail")
-        self.send_button.setStyleSheet("font-weight: 600;")
+        theme.set_role(self.send_button, "primary")
         self.send_button.clicked.connect(self.send)
         discard = QPushButton("Discard")
         discard.clicked.connect(self.discard)
@@ -121,7 +123,7 @@ class DraftsPage(QWidget):
                                    f"{r['subject']}\n{r['meeting']}  ·  {to}")
             item.setData(Qt.UserRole, r["id"])
             if r["warning"]:
-                item.setForeground(QColor("#8a4b00"))
+                item.setForeground(QColor(theme.tokens().warning_text))
             self.list.addItem(item)
             if r["id"] == keep:
                 self.list.setCurrentItem(item)

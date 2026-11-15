@@ -88,7 +88,7 @@ def field_value(key: str, ctx: EventContext, prefs: Prefs):
     if key == "has_conflicts":
         return any(c.verdict == ConflictVerdict.CONTRADICTS for c in report.conflicts)
     if key == "has_feature_requests":
-        return any(a.kind == AnchorKind.FEATURE for a in report.anchors)
+        return bool(report.feature_requests) or any(a.kind == AnchorKind.FEATURE for a in report.anchors)
     if key == "action_item_count":
         return len(report.summary.action_items)
     if key == "item_owner":

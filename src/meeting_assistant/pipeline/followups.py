@@ -22,10 +22,10 @@ from ..automations.context import Prefs, internal_lines
 from ..llm import LLMProvider
 from ..models import AnchorKind, MeetingReport
 from ..scheduling import resolve_due
+from ..textmatch import content_words
 from .prompts import SYSTEM
 
 MAX_SUGGESTIONS = 4
-STOPWORDS = {"the", "and", "for", "with", "that", "this", "from", "have", "will", "they", "their", "about"}
 
 
 class Recipient(BaseModel):
@@ -95,11 +95,6 @@ def match_address(name: str, attendees: list[str], contacts: dict[str, str]) -> 
             return email
     hits = [a for a in attendees if words[0] in name_tokens(a)]
     return hits[0] if len(hits) == 1 else None
-
-
-def content_words(text: str) -> list[str]:
-    words = [w for w in re.findall(r"[a-z0-9']+", text.lower()) if len(w) > 3 and w not in STOPWORDS]
-    return [w[:-1] if w.endswith("s") and not w.endswith("ss") else w for w in words]
 
 
 def leaked_note(body: str, notes: list[str]) -> str | None:

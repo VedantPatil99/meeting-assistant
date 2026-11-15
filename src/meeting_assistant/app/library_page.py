@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 from ..anchors import parse_anchors
 from ..models import AnchorKind, format_ts
 from ..session import MeetingSession
+from . import theme
 
 KIND_LABEL = {AnchorKind.MUST: "Must include", AnchorKind.CONTEXT: "Background",
               AnchorKind.INTERNAL: "🔒 Internal", AnchorKind.FEATURE: "Feature request"}
@@ -63,10 +64,11 @@ class LibraryPage(QWidget):
         self.search.setPlaceholderText("Search titles and transcripts")
         self.search.textChanged.connect(self.refresh)
         self.list = QListWidget()
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.list.currentItemChanged.connect(lambda item, _: self.show_meeting(item))
         left = QVBoxLayout()
         left.setContentsMargins(0, 0, 0, 0)
-        left.addWidget(QLabel("<b>Meetings</b>"))
+        left.addWidget(theme.title("Meetings"))
         left.addWidget(self.search)
         left.addWidget(self.list)
         left_widget = QWidget()
@@ -143,7 +145,7 @@ class LibraryPage(QWidget):
         people = ", ".join(info.attendees) or "no attendees listed"
         self.header.setText(f"<b>{html.escape(info.title)}</b>  ·  {info.meeting_type}  ·  {html.escape(people)}")
         if session.report_file.exists():
-            self.summary.setMarkdown(session.report_file.read_text(encoding="utf-8"))
+            theme.set_markdown(self.summary, session.report_file.read_text(encoding="utf-8"))
         else:
             self.summary.setPlainText("Not processed yet. Press “Edit notes and process”.")
         self.transcript.setPlainText(session.transcript_file.read_text(encoding="utf-8")
