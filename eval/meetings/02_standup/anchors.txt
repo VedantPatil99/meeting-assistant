@@ -1,0 +1,2 @@
+[00:00:24] ! Deepa blocked on FIX certification, Barclays test environment down
+[00:01:14] ! Release 4.2 cut on Thursday, merge deadline Wednesday evening

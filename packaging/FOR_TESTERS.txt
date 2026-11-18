@@ -1,0 +1,34 @@
+Meeting Assistant - test build
+==============================
+
+Thanks for trying it! Everything runs on your own computer and is free. Your recordings
+never leave it.
+
+What you need
+- Windows 10 or 11
+- About 7 GB of free disk space (the AI models)
+- 8 GB of RAM or more works best. With less, pick the lighter AI model during setup.
+
+Install
+1. Unzip the whole folder somewhere you keep programs, for example Documents\MeetingAssistant.
+   Keep all the files together; MeetingAssistant.exe needs the folder next to it.
+2. Double-click MeetingAssistant.exe.
+3. Windows may say "Windows protected your PC". That's because the app isn't signed with a
+   paid certificate. Click "More info", then "Run anyway".
+4. A setup window walks you through the rest:
+   - Install Ollama (free, from ollama.com) when it asks. It runs the AI locally.
+   - Download the AI model and the speech model. This takes a while, once.
+
+Try it
+- Start recording in a call (or play a YouTube video of a meeting), type a few notes,
+  stop, then press Process meeting.
+- Note shortcuts: "!" must be in the summary, "internal:" never goes into client emails,
+  "fr:" marks a feature request. Ctrl+Shift+Space adds a note from any app.
+- Processing a 30-minute meeting takes a few minutes, longer on laptops without a graphics card.
+
+If something breaks
+- Error details are saved in: %USERPROFILE%\MeetingAssistant\logs\crash.log
+  Please send that file back along with what you were doing.
+- Your meetings are in %USERPROFILE%\MeetingAssistant. Delete that folder to start fresh.
+
+Gmail and Notion are optional and need their own one-time setup (see Settings in the app).

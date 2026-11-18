@@ -1,0 +1,19 @@
+[00:00:04] Meera: Welcome to sprint 18 planning. The proposed goal is shipping version two of the margin calculator.
+[00:00:15] Sofia: Agreed from the product side. Two clients are waiting on it.
+[00:00:22] Meera: The calculator needs three stories: the new haircut table, the stress scenarios and the export of results.
+[00:00:35] Arjun: The haircut table is about five points. I can take it.
+[00:00:41] Meera: Good, Arjun has the haircut table.
+[00:00:47] Meera: Next, the settlement-date bug where T+2 dates fall on bank holidays. Arjun, can you take that as well?
+[00:00:58] Arjun: I can, but I'm already at capacity with the haircut table.
+[00:01:05] Kiran: Meera wrote the holiday calendar code originally, didn't you?
+[00:01:10] Meera: I did. Fine, I'll take the settlement-date bug myself, not Arjun.
+[00:01:18] Sofia: How long will it take?
+[00:01:21] Meera: Two or three days. I'll have a fix in review by next Tuesday.
+[00:01:30] Sofia: One more thing from clients. Hartwell Asset Management asked whether they could upload trades in bulk from a CSV file instead of typing them one by one.
+[00:01:44] Sofia: They book about two hundred trades every morning.
+[00:01:50] Meera: That's not for this sprint, but log it for the backlog.
+[00:01:56] Sofia: Will do. I'll write it up with their file format by Friday.
+[00:02:04] Kiran: I'll take the stress scenarios story. It depends on the risk team's scenario file.
+[00:02:12] Meera: Who owns getting that file?
+[00:02:15] Kiran: I'll ask Leila in risk today.
+[00:02:20] Meera: Great. Sprint goal confirmed: margin calculator version two. Thanks all.

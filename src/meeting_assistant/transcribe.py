@@ -2,12 +2,36 @@
 
 from __future__ import annotations
 
+import wave
 from pathlib import Path
 from typing import Callable
 
 from .config import Settings
 from .models import Segment, Transcript
 from .transcript import merge_transcripts
+
+
+SPEECH_RATE = 16000  # what the speech model expects
+
+
+def read_wav(path: Path):
+    """Reads a 16-bit WAV (what the recorder writes) into the float32 mono 16 kHz samples
+    Whisper wants. faster-whisper could decode it with PyAV (FFmpeg), but that library is
+    67 MB, so the packaged app leaves it out and uses this instead."""
+    import numpy as np  # installed with faster-whisper
+
+    with wave.open(str(path), "rb") as f:
+        if f.getsampwidth() != 2:
+            raise ValueError(f"{path.name}: only 16-bit WAV is supported")
+        channels, rate = f.getnchannels(), f.getframerate()
+        samples = np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16).astype(np.float32) / 32768
+    if channels > 1:
+        samples = samples.reshape(-1, channels).mean(axis=1)
+    if rate != SPEECH_RATE and len(samples):
+        duration = len(samples) / rate
+        samples = np.interp(np.arange(0, duration, 1 / SPEECH_RATE), np.arange(len(samples)) / rate,
+                            samples).astype(np.float32)
+    return samples
 
 
 def load_model(settings: Settings, device: str | None = None):
@@ -49,7 +73,9 @@ class Transcriber:
             return self._run(audio_path, speaker, on_progress)
 
     def _run(self, audio_path, speaker, on_progress) -> Transcript:
-        segments, _info = self.model.transcribe(str(audio_path), vad_filter=True)
+        path = Path(audio_path)
+        audio = read_wav(path) if path.suffix.lower() == ".wav" else str(path)  # other formats need PyAV
+        segments, _info = self.model.transcribe(audio, vad_filter=True)
         out: list[Segment] = []
         for seg in segments:
             out.append(Segment(start=seg.start, end=seg.end, speaker=speaker, text=seg.text.strip()))

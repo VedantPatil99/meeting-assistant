@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
+from pydantic.json_schema import SkipJsonSchema
 
 # what a small model writes when a field is unknown; treated as empty
 NOT_GIVEN = {"", "none", "null", "n/a", "na", "not specified", "unspecified", "unknown", "tbd", "not mentioned"}
@@ -77,9 +78,13 @@ class Summary(BaseModel):
     action_items: list[ActionItem] = []
     open_questions: list[Point] = []
     key_points: list[Point] = []
+    # extra sections from the meeting type's template (pipeline/templates.py), e.g. "blockers";
+    # kept out of the schema the model sees, which gets the template's own fields instead
+    sections: SkipJsonSchema[dict[str, list[Point]]] = {}
 
     def lines(self) -> list[str]:
         out = [p.text for p in self.decisions + self.open_questions + self.key_points]
+        out += [p.text for points in self.sections.values() for p in points]
         out += [a.task for a in self.action_items]
         return out
 
@@ -109,6 +114,7 @@ class ConflictResult(BaseModel):
     explanation: str = ""
     transcript_quote: str | None = None
     timestamp: str | None = None
+    transcript_final: str | None = None  # what the meeting finally settled on, used to correct the summary
 
 
 class FeatureRequest(BaseModel):

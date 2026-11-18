@@ -1,0 +1,17 @@
+[00:00:04] Leila: This is the review of Tuesday's pricing feed outage. Blameless format as usual. Kiran, can you walk through the timeline?
+[00:00:14] Kiran: At 9:05 the pricing gateway stopped accepting connections from the market data vendor. Prices on the trading screens froze.
+[00:00:27] Kiran: Support saw the first client call at 9:12. We restored the feed at 10:00, so the outage lasted 55 minutes.
+[00:00:40] Leila: And the root cause?
+[00:00:43] Kiran: The TLS certificate on the feed gateway expired. It was a one-year certificate and nobody had a reminder for it.
+[00:00:56] Leila: Why did it take almost an hour to fix?
+[00:01:00] Kiran: The runbook pointed to the old certificate store. We lost twenty minutes finding the right one.
+[00:01:12] Leila: Okay. Client impact?
+[00:01:15] Priya: Four clients traded on stale prices. Two have asked for a written incident report.
+[00:01:26] Leila: Priya, can you send them the report by Thursday?
+[00:01:30] Priya: Yes, by Thursday.
+[00:01:33] Leila: Actions. First, monitoring that warns us thirty days before any certificate expires.
+[00:01:42] Kiran: I'll set that up by next Friday.
+[00:01:46] Leila: Second, the runbook. I'll update it myself this week with the correct certificate store.
+[00:01:55] Kiran: We should also check the other gateways for certificates expiring soon.
+[00:02:01] Leila: Good point. Kiran, add that audit to your list.
+[00:02:05] Leila: Thanks everyone. I'll circulate these notes.

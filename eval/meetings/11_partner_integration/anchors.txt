@@ -1,0 +1,6 @@
+ctx: Eastgate is the clearing house, we are the partner integrating with them
+[00:01:09] fr: webhook for settlement status changes
+[00:02:13] fr: sandbox with realistic data
+! Production target mid-March
+! API v2 retired end of June, build on v3
+internal: Eastgate is slow on product changes, plan as if no webhook this year

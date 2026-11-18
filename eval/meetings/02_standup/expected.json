@@ -1,0 +1,15 @@
+{
+  "title": "OMS team standup",
+  "type": "standup",
+  "facts": [
+    {"name": "Deepa blocked by Barclays", "all": [["deepa"], ["barclays"], ["block", "down"]]},
+    {"name": "release 4.2 cut Thursday", "all": [["4.2"], ["thursday"]]},
+    {"name": "blotter fix", "all": [["blotter", "filter"]]}
+  ],
+  "owners": [
+    {"task": [["escalat", "account manager"]], "owner": "Meera"},
+    {"task": [["deploy", "staging"]], "owner": "Kiran"}
+  ],
+  "conflicts": [],
+  "features": []
+}

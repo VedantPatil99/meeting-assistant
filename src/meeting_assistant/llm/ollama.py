@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import httpx
 from pydantic import ValidationError
 
@@ -53,3 +55,38 @@ class OllamaProvider:
         except httpx.HTTPError:
             return False
         return any(m.get("name", "").startswith(self.model) for m in tags.get("models", []))
+
+
+def extraction_provider(settings: Settings) -> OllamaProvider | None:
+    """A provider for the lighter extraction model, or None when it isn't set (or is the main one)."""
+    if not settings.extract_model or settings.extract_model == settings.ollama_model:
+        return None
+    return OllamaProvider(replace(settings, ollama_model=settings.extract_model))
+
+
+class OllamaEmbedder:
+    """Turns text into vectors with a local embedding model, for searching across meetings."""
+
+    def __init__(self, settings: Settings, timeout: float = 120.0):
+        self.host = settings.ollama_host.rstrip("/")
+        self.model = settings.embed_model
+        self.client = httpx.Client(timeout=timeout)
+
+    def embed(self, texts: list[str]):
+        import numpy as np
+
+        try:
+            resp = self.client.post(f"{self.host}/api/embed", json={"model": self.model, "input": texts})
+            resp.raise_for_status()
+        except httpx.ConnectError as e:
+            raise LLMError(f"Cannot reach Ollama at {self.host}. Is the Ollama app running?") from e
+        except httpx.HTTPStatusError as e:
+            raise LLMError(f"Ollama error {e.response.status_code}: {e.response.text}") from e
+        return np.array(resp.json()["embeddings"], dtype=np.float32)
+
+    def is_available(self) -> bool:
+        try:
+            tags = self.client.get(f"{self.host}/api/tags").json()
+        except httpx.HTTPError:
+            return False
+        return any(m.get("name", "").split(":")[0] == self.model.split(":")[0] for m in tags.get("models", []))

@@ -1,0 +1,139 @@
+{
+  "index_seconds": 4.5,
+  "cases": [
+    {
+      "question": "When is the training session for Larkspur's new users?",
+      "ok": true,
+      "found": true,
+      "answer": "The training session for Larkspur's new users is scheduled for the 10th of March, morning, Dublin time. This was agreed upon in the Larkspur quarterly review on October 19, 2026.",
+      "cited": [
+        "07_client_qbr"
+      ],
+      "seconds": 19.8
+    },
+    {
+      "question": "What caused the pricing feed outage?",
+      "ok": true,
+      "found": true,
+      "answer": "The pricing feed outage was caused by the expiration of the TLS certificate on the feed gateway, as discussed in the Pricing feed outage review meeting on 2026-10-13.",
+      "cited": [
+        "05_incident_review"
+      ],
+      "seconds": 28.1
+    },
+    {
+      "question": "Who is blocked on the FIX certification?",
+      "ok": false,
+      "found": true,
+      "answer": "The FIX certification is blocked due to Barclays' test environment being down. This was discussed in the OMS team standup on 2026-10-04.",
+      "cited": [
+        "02_standup"
+      ],
+      "seconds": 26.1
+    },
+    {
+      "question": "What discount did we agree with Anita?",
+      "ok": true,
+      "found": true,
+      "answer": "In the licence pricing negotiation on 2026-11-03, we agreed to a twelve percent discount for a two-year term with Anita.",
+      "cited": [
+        "12_pricing_negotiation"
+      ],
+      "seconds": 24.0
+    },
+    {
+      "question": "Who owns the data migration for Fenwick?",
+      "ok": true,
+      "found": true,
+      "answer": "The data migration for Fenwick is owned by Tom as mentioned in the Fenwick implementation kickoff on 2026-10-22.",
+      "cited": [
+        "08_onboarding_kickoff"
+      ],
+      "seconds": 22.5
+    },
+    {
+      "question": "What did Rahul say about the licence cost?",
+      "ok": true,
+      "found": true,
+      "answer": "In the Dashboard pilot feedback meeting on 2026-10-01, Rahul mentioned that he would sign off on the rollout once the licence question is settled, implying his concern about the licence cost.",
+      "cited": [
+        "01_client_feedback"
+      ],
+      "seconds": 26.4
+    },
+    {
+      "question": "What is the rate limit on the Eastgate API?",
+      "ok": false,
+      "found": false,
+      "answer": "I couldn't find that in your meetings.",
+      "cited": [],
+      "seconds": 25.2
+    },
+    {
+      "question": "When does the market data price increase start?",
+      "ok": false,
+      "found": false,
+      "answer": "I couldn't find that in your meetings.",
+      "cited": [],
+      "seconds": 15.7
+    },
+    {
+      "question": "How many trades a day are missing confirmation emails?",
+      "ok": true,
+      "found": true,
+      "answer": "The meeting on missing confirmations escalation (2026-10-25) reported that around thirty trades a day are missing confirmation emails.",
+      "cited": [
+        "09_support_escalation"
+      ],
+      "seconds": 18.8
+    },
+    {
+      "question": "When does Northbridge's contract with their current vendor end?",
+      "ok": true,
+      "found": true,
+      "answer": "According to Northbridge's discovery call on 2026-10-10, their contract with the current vendor ends in June.",
+      "cited": [
+        "04_sales_discovery"
+      ],
+      "seconds": 19.9
+    },
+    {
+      "question": "What was the sprint goal for sprint 18?",
+      "ok": true,
+      "found": true,
+      "answer": "The sprint goal for sprint 18 was to ship version two of the margin calculator, as discussed in the Sprint 18 planning meeting on 2026-10-07.",
+      "cited": [
+        "03_sprint_planning"
+      ],
+      "seconds": 22.4
+    },
+    {
+      "question": "Who will investigate the Monday dashboard slowness?",
+      "ok": true,
+      "found": true,
+      "answer": "The Monday dashboard slowness will be investigated by Ankit from the engineering team during the Dashboard pilot feedback meeting on 2026-10-01.",
+      "cited": [
+        "01_client_feedback"
+      ],
+      "seconds": 21.3
+    },
+    {
+      "question": "When will the contract with Anita be signed?",
+      "ok": true,
+      "found": true,
+      "answer": "The contract with Anita will be signed on Wednesday, as mentioned in the contract check-in meeting on 2026-10-28.",
+      "cited": [
+        "10_short_checkin"
+      ],
+      "seconds": 19.5
+    },
+    {
+      "question": "What did we decide about the Singapore office lease?",
+      "ok": true,
+      "found": false,
+      "answer": "I couldn't find that in your meetings.",
+      "cited": [],
+      "seconds": 16.3
+    }
+  ]
+}

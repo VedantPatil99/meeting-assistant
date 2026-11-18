@@ -1,0 +1,30 @@
+{
+  "tracker": [
+    [1, "Export reports to Excel", "For the risk committee pack"],
+    [2, "Alerts when a trade fails to book", "By email or Teams"],
+    [3, "Bulk trade upload from CSV", "About 200 trades every morning"],
+    [4, "Dark mode", "Portfolio managers working late"],
+    [5, "Single sign-on with Azure AD", "Security team requirement"],
+    [6, "Scheduled reports delivered by email", "Any saved report, daily, weekly or monthly"],
+    [7, "Audit trail of trade confirmations", "Timestamps and delivery status for the regulator"],
+    [8, "Webhook for settlement status changes", "Instead of polling the status endpoint"]
+  ],
+  "cases": [
+    {"title": "Export reports to Excel", "detail": "", "expected": 1, "kind": "same wording"},
+    {"title": "Excel export of the P&L report", "detail": "For month end", "expected": 1, "kind": "reworded"},
+    {"title": "Trade failure alerts by email", "detail": "", "expected": 2, "kind": "reworded"},
+    {"title": "Upload trades in bulk from a CSV file", "detail": "", "expected": 3, "kind": "reworded"},
+    {"title": "Night theme for the dashboard", "detail": "Easier on the eyes in the evening", "expected": 4, "kind": "synonym"},
+    {"title": "Download reports as spreadsheets", "detail": "Open them in Excel", "expected": 1, "kind": "synonym"},
+    {"title": "Notify us when a booking fails", "detail": "", "expected": 2, "kind": "synonym"},
+    {"title": "Login with company Microsoft accounts", "detail": "No separate password", "expected": 5, "kind": "synonym"},
+    {"title": "Automatic emailing of reports on a schedule", "detail": "", "expected": 6, "kind": "reworded"},
+    {"title": "Callback when a trade settles", "detail": "Push instead of polling", "expected": 8, "kind": "synonym"},
+    {"title": "Export reports as PDF", "detail": "", "expected": null, "kind": "different"},
+    {"title": "Export reports to CSV", "detail": "", "expected": null, "kind": "different"},
+    {"title": "Single sign-on with Okta", "detail": "", "expected": null, "kind": "different"},
+    {"title": "Alerts when a price feed stops", "detail": "", "expected": null, "kind": "different"},
+    {"title": "Bloomberg ticker lookup", "detail": "Fill in the instrument from a ticker", "expected": null, "kind": "new"},
+    {"title": "Group the best execution report by broker", "detail": "", "expected": null, "kind": "new"}
+  ]
+}

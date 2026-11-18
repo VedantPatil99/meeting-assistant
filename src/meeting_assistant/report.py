@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .models import ConflictVerdict, CoverageStatus, MeetingReport, Point
+from .pipeline.templates import section_title
 
 COVERAGE_ICON = {
     CoverageStatus.COVERED: "✅ covered",
@@ -22,7 +23,8 @@ def render_markdown(report: MeetingReport) -> str:
     anchors = {a.id: a for a in report.anchors}
     out = [f"# {report.title}", f"*Meeting type: {report.meeting_type}*", ""]
 
-    sections = [
+    sections = [(section_title(report.meeting_type, key), points) for key, points in s.sections.items()]
+    sections += [
         ("Decisions", s.decisions),
         ("Open questions", s.open_questions),
         ("Key points", s.key_points),

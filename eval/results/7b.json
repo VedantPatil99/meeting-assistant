@@ -1,0 +1,593 @@
+{
+  "totals": {
+    "model": "qwen2.5:7b",
+    "extract_model": null,
+    "facts": "33/36 (92%)",
+    "owners": "16/27 (59%)",
+    "conflict recall": "6/6 (100%)",
+    "conflict precision": "6/10 (60%)",
+    "feature recall": "9/14 (64%)",
+    "feature precision": "10/10 (100%)",
+    "tracker": "14/16 (88%)",
+    "coverage statuses": {
+      "covered": 27,
+      "conflict": 10,
+      "repaired": 4
+    },
+    "seconds total": 708.4,
+    "seconds per meeting": 59.0,
+    "seconds by step": {
+      "ConflictCheck (qwen2.5:7b)": 258.7,
+      "Summary (qwen2.5:7b)": 141.9,
+      "ClientSummary (qwen2.5:7b)": 126.7,
+      "MatchChoice (qwen2.5:7b)": 48.7,
+      "CoverageCheck (qwen2.5:7b)": 38.0,
+      "IncidentSummary (qwen2.5:7b)": 33.4,
+      "PlanningSummary (qwen2.5:7b)": 32.1,
+      "SalesSummary (qwen2.5:7b)": 24.7,
+      "FoundRequests (qwen2.5:7b)": 24.2,
+      "StandupSummary (qwen2.5:7b)": 20.9,
+      "RepairedPoint (qwen2.5:7b)": 7.8
+    }
+  },
+  "meetings": {
+    "01_client_feedback": {
+      "seconds": 81.1,
+      "facts": {
+        "Monday slowness": true,
+        "go-live is 20 December": true,
+        "licence cost concern": true
+      },
+      "owners": {
+        "Vedant: licen": true,
+        "Ankit: monday": true
+      },
+      "conflicts": {
+        "expected": 1,
+        "found": 1,
+        "correct": 1,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 2,
+        "found": 2,
+        "recalled": [
+          "Excel export",
+          "trade failure alerts"
+        ],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 3,
+        "conflict": 1,
+        "repaired": 1
+      },
+      "summary": "Go-live date moved to 20 December\nAnkit from engineering team will investigate Monday performance issue by next Wednesday\nClient needs to discuss licence cost internally before committing to full rollout\nDashboard speed issue on Monday mornings\nRequest for direct export of reports to Excel\nClient's hesitation about the licence cost and risk to full rollout\nRahul requested alerts when a trade fails to book, via email or Teams.\nMonday morning dashboard slowness\nPricing concerns and risk to full rollout\nGo-live confirmed for 20 December\nLicence cost to be discussed internally before full rollout commitment\nSend licence breakdown to client by Friday\nInvestigate Monday performance issue and report back next Wednesday",
+      "found_requests": [
+        "Export reports directly to Excel ",
+        "Trade booking failure alerts via email or Teams "
+      ]
+    },
+    "02_standup": {
+      "seconds": 41.8,
+      "facts": {
+        "Deepa blocked by Barclays": true,
+        "release 4.2 cut Thursday": true,
+        "blotter fix": true
+      },
+      "owners": {
+        "Meera: escalat": true,
+        "Kiran: deploy": false
+      },
+      "conflicts": {
+        "expected": 0,
+        "found": 0,
+        "correct": 0,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 0,
+        "found": 0,
+        "recalled": [],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 2
+      },
+      "summary": "Release 4.2 cut on Thursday, merge deadline Wednesday evening.\nArjun finished the order amendment screen and is writing tests for it.\nKiran fixed the blotter freezing issue when filtering by counterparty and will deploy to staging this afternoon.\nDeepa is blocked on FIX certification due to Barclays test environment being down since Monday.\nEscalate Deepa's issue with Barclays' support to their account manager.\nMerge the amendment screen by Wednesday evening for release 4.2 on Thursday.",
+      "found_requests": []
+    },
+    "03_sprint_planning": {
+      "seconds": 57.1,
+      "facts": {
+        "sprint goal": true,
+        "Meera takes settlement bug": true
+      },
+      "owners": {
+        "Arjun: haircut": false,
+        "Meera: settlement": false,
+        "Kiran: scenario file": true
+      },
+      "conflicts": {
+        "expected": 1,
+        "found": 1,
+        "correct": 1,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 1,
+        "found": 1,
+        "recalled": [
+          "bulk CSV trade upload"
+        ],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 2,
+        "conflict": 1
+      },
+      "summary": "Arjun takes the haircut table story\nMeera will take the settlement-date bug herself\nKiran takes the stress scenarios story\nTwo clients are waiting on margin calculator v2\nHartwell Asset Management requested bulk trade upload from CSV, but it's not for this sprint\nShipping version two of the margin calculator\nNew haircut table, five points\nSettlement-date bug, two or three days\nStress scenarios story\nDependence on the risk team's scenario file for stress scenarios\nUncertainty about when the settlement-date bug will be fixed, as it depends on Meera's availability\nWrite up Hartwell Asset Management's file format for bulk trade upload by Friday\nAsk Leila in risk about the ownership of getting the scenario file",
+      "found_requests": [
+        "Bulk trade upload from CSV for Hartwell "
+      ]
+    },
+    "04_sales_discovery": {
+      "seconds": 53.5,
+      "facts": {
+        "decision by end of Q1": true,
+        "contract ends June": true,
+        "budget not approved": true
+      },
+      "owners": {
+        "Vedant: security": false,
+        "Sanjay: workflow": false
+      },
+      "conflicts": {
+        "expected": 0,
+        "found": 0,
+        "correct": 0,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 2,
+        "found": 1,
+        "recalled": [
+          "SSO with Azure AD"
+        ],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 3,
+        "repaired": 1
+      },
+      "summary": "Sanjay runs the fixed income desk at Northbridge Capital\nCurrent vendor contract ends in June\nBudget not approved yet; Sanjay mentioned Anita will set it after reviewing options.\nOur current vendor plus a lot of spreadsheets\nTraders hate re-keying trades between systems\nSingle sign-on with Azure AD (SSO)\nAn API for risk system to pull positions every few minutes\nDecision by end of Q1\nCurrent vendor contract ends in June\nBudget not approved yet, will be set after seeing options\nSanjay, Anita (COO), and IT security involved in the decision\nDecision by end of Q1",
+      "found_requests": [
+        "SSO with Azure AD "
+      ]
+    },
+    "05_incident_review": {
+      "seconds": 51.4,
+      "facts": {
+        "root cause certificate": true,
+        "outage 55 minutes": true,
+        "stale prices": true
+      },
+      "owners": {
+        "Kiran: monitor": true,
+        "Leila: runbook": true,
+        "Priya: incident report": false
+      },
+      "conflicts": {
+        "expected": 1,
+        "found": 1,
+        "correct": 1,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 0,
+        "found": 0,
+        "recalled": [],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 2,
+        "conflict": 1
+      },
+      "summary": "Monitoring that warns us thirty days before any certificate expires.\nUpdating the runbook with the correct certificate store by Leila this week.\nChecking other gateways for certificates expiring soon, to be added to Kiran's list.\nThe outage lasted 40 minutes, not 55 as initially stated.\nTwo clients may ask for service credits.\nAt 9:05 the pricing gateway stopped accepting connections from the market data vendor. Prices on the trading screens froze.\nSupport saw the first client call at 9:12.\nThe outage lasted 55 minutes, restored at 10:00.\nThe TLS certificate on the feed gateway expired. It was a one-year certificate and nobody had a reminder for it.\nFour clients traded on stale prices. Two have asked for a written incident report.\nThe outage lasted 55 minutes, affecting client operations during this period.\nSet up monitoring that warns us thirty days before any certificate expires.\nUpdate the runbook with the correct certificate store.",
+      "found_requests": []
+    },
+    "06_vendor_call": {
+      "seconds": 33.0,
+      "facts": {
+        "8% increase": true,
+        "Asian equities in May": true,
+        "three-year offer": true
+      },
+      "owners": {
+        "Marco: specification": true,
+        "Vedant: three-year": false
+      },
+      "conflicts": {
+        "expected": 0,
+        "found": 2,
+        "correct": 0,
+        "false_alarms": [
+          "Price increase 8% from April, 5% if we sign three years",
+          "consider switching vendor if the increase holds"
+        ],
+        "missed": []
+      },
+      "features": {
+        "expected": 0,
+        "found": 0,
+        "recalled": [],
+        "extra": []
+      },
+      "coverage": {
+        "conflict": 2,
+        "covered": 1
+      },
+      "summary": "Price increase 8% from April, 5% if we sign three years\nAsian equities feed live in May (Tokyo and Hong Kong first, Singapore later)\nSend field specification for Asian equities feed",
+      "found_requests": []
+    },
+    "07_client_qbr": {
+      "seconds": 143.1,
+      "facts": {
+        "two-year renewal": true,
+        "quarterly roadmap calls": true,
+        "training 10 March": false,
+        "Dublin login slow": true,
+        "position file late": false
+      },
+      "owners": {
+        "Priya: dublin": true,
+        "Vedant: renewal contract": true,
+        "Priya: position file": false
+      },
+      "conflicts": {
+        "expected": 1,
+        "found": 3,
+        "correct": 1,
+        "false_alarms": [
+          "renewal flat rate is below our target margin, check with finance",
+          "schedule reports to be emailed automatically"
+        ],
+        "missed": []
+      },
+      "features": {
+        "expected": 4,
+        "found": 3,
+        "recalled": [
+          "dark mode",
+          "scheduled reports"
+        ],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 3,
+        "conflict": 3
+      },
+      "summary": "Renewal agreed for two years at the current rate.\nQuarterly roadmap calls with our product manager, Sofia will be set up in January.\nDark mode requested by Helen.\nScheduled reports to be emailed automatically requested by Helen.\nUptime for the quarter was 99.95 percent.\nThe blotter and the P&L dashboard, by far. The compliance reports are used mostly at month end.\nLogging in takes too long in the morning. Sometimes thirty seconds before the dashboard appears.\nThe best execution report groups trades by venue, but our compliance officer needs it grouped by broker as well.\nRenewal agreed for two years at current rate\nClient wants quarterly roadmap calls\nTraining session set for 3 March\nRenewal flat rate is below our target margin, check with finance\nCheck the Dublin login speed issue\nSend the renewal contract to procurement by the 10th of January\nSchedule the first quarterly roadmap call in January",
+      "found_requests": [
+        "Add dark mode for the application interface ",
+        "Implement automated scheduling and email delivery of saved reports ",
+        "Schedule reports to be emailed automatically "
+      ]
+    },
+    "08_onboarding_kickoff": {
+      "seconds": 46.3,
+      "facts": {
+        "UAT starts 2 Feb": true,
+        "Tom owns migration": true,
+        "Grace leads UAT": true
+      },
+      "owners": {
+        "Tom: sample": true,
+        "Arjun: uat environment": true,
+        "Arjun: okta": false
+      },
+      "conflicts": {
+        "expected": 0,
+        "found": 0,
+        "correct": 0,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 1,
+        "found": 1,
+        "recalled": [
+          "Bloomberg ticker lookup"
+        ],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 2,
+        "repaired": 1
+      },
+      "summary": "UAT will start on February 2nd.\nTom will own the data migration and Grace will lead UAT.\nCan Bloomberg ticker lookup be added to the system?\nThe first step is a sample extract of trades and positions.\nSingle sign-on with Okta will be standard.\nGrace mentioned the need to implement Bloomberg ticker lookup when entering instruments, as it is a frequently used feature in the current system.\nSend a sample file of trades and positions by Friday.\nSet up the UAT environment by the end of January and share test scripts a week before UAT starts.\nAdd Bloomberg ticker lookup functionality by ISIN or instrument code.",
+      "found_requests": [
+        "Bloomberg ticker lookup when entering instruments "
+      ]
+    },
+    "09_support_escalation": {
+      "seconds": 37.2,
+      "facts": {
+        "30 trades a day": true,
+        "patch next Tuesday": true,
+        "more than 20 recipients rejected": false
+      },
+      "owners": {
+        "Daniel: resend": true,
+        "Priya: update": false
+      },
+      "conflicts": {
+        "expected": 1,
+        "found": 1,
+        "correct": 1,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 1,
+        "found": 0,
+        "recalled": [],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 2,
+        "conflict": 1
+      },
+      "summary": "The fix needs a configuration change and a release. The patch is scheduled for next Tuesday.\nOur support analyst, Daniel, will resend them each evening until the patch is live.\nMissing confirmations affect around 30 trades a day\nFix promised by end of this week (but patch is scheduled for next Tuesday)\nHelen is under pressure from her boss, keep her updated proactively\nResend missed confirmations manually every evening\nProvide a downloadable audit trail of every confirmation, with timestamps and delivery status",
+      "found_requests": []
+    },
+    "10_short_checkin": {
+      "seconds": 17.9,
+      "facts": {
+        "signing next week": true,
+        "retention seven years": true
+      },
+      "owners": {
+        "Vedant: clause": true
+      },
+      "conflicts": {
+        "expected": 0,
+        "found": 0,
+        "correct": 0,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 0,
+        "found": 0,
+        "recalled": [],
+        "extra": []
+      },
+      "coverage": {
+        "repaired": 1
+      },
+      "summary": "Contract signature moved to next week.\nContract signature moved to next week\nData retention clause needs adjustment from five years to seven years\nSend updated clause for data retention",
+      "found_requests": []
+    },
+    "11_partner_integration": {
+      "seconds": 113.0,
+      "facts": {
+        "mid-March production": true,
+        "v2 retired June": true,
+        "batch endpoint": true,
+        "rate limit 100/min": true
+      },
+      "owners": {
+        "Kiran: error code": false,
+        "Mei: sandbox": true
+      },
+      "conflicts": {
+        "expected": 0,
+        "found": 0,
+        "correct": 0,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 3,
+        "found": 2,
+        "recalled": [
+          "settlement status webhook",
+          "realistic sandbox"
+        ],
+        "extra": []
+      },
+      "coverage": {
+        "covered": 5
+      },
+      "summary": "Use the batch endpoint for now.\nLegal signs within two weeks, aiming for production by mid-March.\nWebhook for settlement status changes will be integrated.\nAPI v2 will be retired by the end of June, so build on v3.\nWhen will Eastgate consider adding webhooks?\nWhat is the timeline for a maintenance notification through the API?\nPolling at high volumes isn't sustainable.\nSandbox with realistic data is needed.\nProduction target is mid-March.\nPlan as if no webhook this year due to Eastgate's slow product changes.\nShare the rate limit headers with Kiran.\nProvide a richer sandbox environment for testing.\nSend a list of clients expected to be onboarded in the first six months\nCopy Mei on the legal agreement for tracking purposes",
+      "found_requests": [
+        "Webhook for settlement status changes ",
+        "Sandbox with realistic data "
+      ]
+    },
+    "12_pricing_negotiation": {
+      "seconds": 33.0,
+      "facts": {
+        "12% for two years": true,
+        "quarterly billing": true
+      },
+      "owners": {
+        "Vedant: order form": true,
+        "Anita: sign-off": true
+      },
+      "conflicts": {
+        "expected": 1,
+        "found": 1,
+        "correct": 1,
+        "false_alarms": [],
+        "missed": []
+      },
+      "features": {
+        "expected": 0,
+        "found": 0,
+        "recalled": [],
+        "extra": []
+      },
+      "coverage": {
+        "conflict": 1,
+        "covered": 2
+      },
+      "summary": "Two years with a twelve percent discount\nQuarterly billing, without the fee\nClient accepted a ten percent discount on a one-year term, but this was not agreed upon.\nOur floor is 15% discount for a three-year deal\nSend revised order form by Thursday\nGet finance director's sign-off once the order form arrives",
+      "found_requests": []
+    }
+  },
+  "tracker": {
+    "cases": [
+      {
+        "title": "Export reports to Excel",
+        "detail": "",
+        "expected": 1,
+        "kind": "same wording",
+        "got": 1,
+        "ok": true,
+        "decided_by": "word overlap"
+      },
+      {
+        "title": "Excel export of the P&L report",
+        "detail": "For month end",
+        "expected": 1,
+        "kind": "reworded",
+        "got": 1,
+        "ok": true,
+        "decided_by": "word overlap"
+      },
+      {
+        "title": "Trade failure alerts by email",
+        "detail": "",
+        "expected": 2,
+        "kind": "reworded",
+        "got": 2,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Upload trades in bulk from a CSV file",
+        "detail": "",
+        "expected": 3,
+        "kind": "reworded",
+        "got": 3,
+        "ok": true,
+        "decided_by": "word overlap"
+      },
+      {
+        "title": "Night theme for the dashboard",
+        "detail": "Easier on the eyes in the evening",
+        "expected": 4,
+        "kind": "synonym",
+        "got": null,
+        "ok": false,
+        "decided_by": "word overlap"
+      },
+      {
+        "title": "Download reports as spreadsheets",
+        "detail": "Open them in Excel",
+        "expected": 1,
+        "kind": "synonym",
+        "got": 1,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Notify us when a booking fails",
+        "detail": "",
+        "expected": 2,
+        "kind": "synonym",
+        "got": 2,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Login with company Microsoft accounts",
+        "detail": "No separate password",
+        "expected": 5,
+        "kind": "synonym",
+        "got": null,
+        "ok": false,
+        "decided_by": "word overlap"
+      },
+      {
+        "title": "Automatic emailing of reports on a schedule",
+        "detail": "",
+        "expected": 6,
+        "kind": "reworded",
+        "got": 6,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Callback when a trade settles",
+        "detail": "Push instead of polling",
+        "expected": 8,
+        "kind": "synonym",
+        "got": 8,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Export reports as PDF",
+        "detail": "",
+        "expected": null,
+        "kind": "different",
+        "got": null,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Export reports to CSV",
+        "detail": "",
+        "expected": null,
+        "kind": "different",
+        "got": null,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Single sign-on with Okta",
+        "detail": "",
+        "expected": null,
+        "kind": "different",
+        "got": null,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Alerts when a price feed stops",
+        "detail": "",
+        "expected": null,
+        "kind": "different",
+        "got": null,
+        "ok": true,
+        "decided_by": "model"
+      },
+      {
+        "title": "Bloomberg ticker lookup",
+        "detail": "Fill in the instrument from a ticker",
+        "expected": null,
+        "kind": "new",
+        "got": null,
+        "ok": true,
+        "decided_by": "word overlap"
+      },
+      {
+        "title": "Group the best execution report by broker",
+        "detail": "",
+        "expected": null,
+        "kind": "new",
+        "got": null,
+        "ok": true,
+        "decided_by": "model"
+      }
+    ]
+  }
+}

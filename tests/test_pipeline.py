@@ -78,7 +78,8 @@ def test_contradicted_anchor_is_never_forced_into_summary():
     report = process_meeting(provider, TRANSCRIPT, parse_anchors("! Go-live 15 December"))
     assert report.coverage[0].status == CoverageStatus.CONFLICT
     assert not any("15 December" in line for line in report.summary.lines())
-    assert not any(name in ("CoverageCheck", "RepairedPoint") for name, _ in provider.calls)
+    assert not any(name == "RepairedPoint" for name, _ in provider.calls)  # never repaired in
+    assert "Go-live on 20 December" in [p.text for p in report.summary.key_points]  # the meeting's version is
 
 
 def test_report_shows_conflicts_and_excludes_them_from_coverage_rate():
@@ -91,3 +92,21 @@ def test_report_shows_conflicts_and_excludes_them_from_coverage_rate():
     assert "Transcript says 20 December" in md
     assert "contradicts the transcript" in md
     assert "Covered without repair: 100%" in md
+
+
+def test_extract_model_reads_chunks_and_main_model_checks():
+    """The lighter model only does the per-chunk reading; every quality check stays on the main one."""
+    main = FakeProvider(base_answers(lambda p: CoverageCheck(covered=True, line_number=1)))
+    reader = FakeProvider(base_answers(None))
+    process_meeting(main, TRANSCRIPT, parse_anchors("! go live 20 Dec"), extract_provider=reader)
+    assert sorted({name for name, _ in reader.calls}) == ["FoundRequests", "Summary"]
+    assert {name for name, _ in main.calls} == {"ConflictCheck", "CoverageCheck"}
+
+
+def test_extraction_provider_only_when_a_different_model_is_set():
+    from meeting_assistant.config import Settings
+    from meeting_assistant.llm import extraction_provider
+
+    assert extraction_provider(Settings()) is None
+    assert extraction_provider(Settings(extract_model="qwen2.5:7b")) is None
+    assert extraction_provider(Settings(extract_model="qwen2.5:3b")).model == "qwen2.5:3b"

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .anchors import parse_anchors
 from .config import Settings
-from .llm import LLMError, OllamaProvider
+from .llm import LLMError, OllamaProvider, extraction_provider
 from .pipeline import process_meeting
 from .report import render_markdown
 from .transcript import parse_transcript
@@ -53,6 +53,7 @@ def cmd_process(settings: Settings, args) -> int:
             provider, transcript, anchors,
             title=args.title, meeting_type=args.type,
             on_progress=lambda msg: print(f"- {msg}", flush=True),
+            extract_provider=extraction_provider(settings),
         )
     except LLMError as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -1,0 +1,7 @@
+# Notes typed during the meeting. One of them deliberately disagrees with the transcript.
+ctx: Rahul is the decision-maker, Priya is advising on operations
+[00:00:35] ! Monday morning dashboard slowness is the client's top complaint
+[00:01:45] ! Go-live confirmed for 15 December
+[00:02:50] internal: client seems hesitant about the licence cost, risk to full rollout
+fr: export reports directly to Excel for the risk committee
+fr: alerts when a trade fails to book (email or Teams)

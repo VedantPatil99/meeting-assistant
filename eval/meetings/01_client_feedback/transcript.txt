@@ -1,0 +1,21 @@
+[00:00:05] Vedant: Thanks for joining. Today we want your feedback on the reporting dashboard pilot.
+[00:00:14] Rahul: Sure. Overall the team likes it, the daily P&L view saves us a lot of time.
+[00:00:31] Priya: The main complaint is speed. On Monday mornings the dashboard takes almost a minute to load.
+[00:00:45] Vedant: That's useful. Is it every Monday or only at month start?
+[00:00:52] Priya: Mostly Mondays, when everyone logs in after the weekend batch runs.
+[00:01:10] Rahul: The other thing is exports. We still copy numbers into Excel by hand for the risk committee.
+[00:01:22] Rahul: If we could export the report straight to Excel that would save my analysts a few hours a week.
+[00:01:40] Vedant: Noted. Let's talk about the go-live date. We had proposed 15 December.
+[00:01:52] Rahul: 15 December is tight because of our year-end freeze.
+[00:02:05] Priya: Could we do 20 December instead? The freeze lifts on the 19th.
+[00:02:15] Rahul: Yes, let's go with 20 December. That works for us.
+[00:02:24] Vedant: Agreed, go-live moves to 20 December.
+[00:02:35] Vedant: On pricing, the pilot rate ends this month and the standard licence applies from January.
+[00:02:48] Rahul: We'll need to discuss the licence cost internally before we commit to the full rollout.
+[00:03:02] Vedant: Understood. I'll send over the licence breakdown by Friday.
+[00:03:12] Priya: Can someone on your side also look at the Monday performance issue before go-live?
+[00:03:20] Vedant: Yes, Ankit from our engineering team will investigate and report back next Wednesday.
+[00:03:35] Rahul: One more request, we'd like alerts when a trade fails to book, by email or Teams.
+[00:03:48] Vedant: I'll log that as a feature request and get back to you on feasibility.
+[00:04:00] Rahul: Great. I will sign off on the rollout once the licence question is settled.
+[00:04:10] Vedant: Perfect. I'll send a recap email today. Thanks everyone.

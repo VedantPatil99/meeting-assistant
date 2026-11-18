@@ -1,0 +1,17 @@
+{
+  "title": "Missing confirmations escalation",
+  "type": "support escalation",
+  "facts": [
+    {"name": "30 trades a day", "all": [["30", "thirty"]]},
+    {"name": "patch next Tuesday", "all": [["tuesday"]]},
+    {"name": "more than 20 recipients rejected", "all": [["recipient", "relay", "distribution"]]}
+  ],
+  "owners": [
+    {"task": [["resend"]], "owner": "Daniel"},
+    {"task": [["update", "monday", "email"]], "owner": "Priya"}
+  ],
+  "conflicts": ["Fix promised by end of this week"],
+  "features": [
+    {"name": "confirmation audit trail", "all": [["audit"]]}
+  ]
+}

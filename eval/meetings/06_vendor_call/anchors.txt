@@ -1,0 +1,3 @@
+! Price increase 8% from April, 5% if we sign three years
+! Asian equities feed live in May
+internal: consider switching vendor if the increase holds

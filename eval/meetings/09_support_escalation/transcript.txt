@@ -1,0 +1,17 @@
+[00:00:05] Helen: Thanks for making time at short notice. Trade confirmation emails are going missing and our counterparties are chasing us.
+[00:00:14] Priya: I'm sorry about that. How many trades are affected?
+[00:00:18] Helen: Around thirty a day, out of about four hundred.
+[00:00:23] Priya: Is there a pattern? Particular counterparties or times of day?
+[00:00:27] Helen: It seems to be counterparties with long email distribution lists.
+[00:00:33] Priya: That fits. Our engineers found that emails with more than twenty recipients are being rejected by the mail relay.
+[00:00:42] Helen: When will it be fixed? I told my boss it would be sorted by the end of this week.
+[00:00:48] Priya: The fix needs a configuration change and a release. The patch is scheduled for next Tuesday.
+[00:00:55] Helen: Not this week then.
+[00:00:58] Priya: No, next Tuesday is the earliest we can safely release it. In the meantime we can resend the missed confirmations manually every evening.
+[00:01:07] Helen: Please do. Who will handle that?
+[00:01:10] Priya: Our support analyst, Daniel, will resend them each evening until the patch is live.
+[00:01:16] Helen: Okay. Also, when this kind of thing happens we have no way to prove to the regulator what was sent and when.
+[00:01:25] Helen: Could you give us a downloadable audit trail of every confirmation, with timestamps and delivery status?
+[00:01:33] Priya: That's a fair request. I'll raise it with product.
+[00:01:37] Helen: Thank you. Please send me an update on Monday so I can brief my boss.
+[00:01:42] Priya: I'll email you on Monday with the status of the patch.

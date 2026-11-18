@@ -43,6 +43,7 @@ def detect_conflicts(
                 explanation=check.explanation,
                 transcript_quote=check.transcript_quote,
                 timestamp=check.timestamp,
+                transcript_final=None if "not discussed" in check.transcript_final.lower() else check.transcript_final,
             )
         )
     return results

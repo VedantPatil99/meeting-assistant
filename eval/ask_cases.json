@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {"question": "When is the training session for Larkspur's new users?", "meeting": "07_client_qbr", "all": [["10 march", "march 10", "10th of march", "10th march"]]},
+    {"question": "What caused the pricing feed outage?", "meeting": "05_incident_review", "all": [["certificate", "tls"]]},
+    {"question": "Who is blocked on the FIX certification?", "meeting": "02_standup", "all": [["deepa"]]},
+    {"question": "What discount did we agree with Anita?", "meeting": "12_pricing_negotiation", "all": [["12", "twelve"]]},
+    {"question": "Who owns the data migration for Fenwick?", "meeting": "08_onboarding_kickoff", "all": [["tom"]]},
+    {"question": "What did Rahul say about the licence cost?", "meeting": "01_client_feedback", "all": [["licen"]]},
+    {"question": "What is the rate limit on the Eastgate API?", "meeting": "11_partner_integration", "all": [["100", "hundred"]]},
+    {"question": "When does the market data price increase start?", "meeting": "06_vendor_call", "all": [["april"]]},
+    {"question": "How many trades a day are missing confirmation emails?", "meeting": "09_support_escalation", "all": [["30", "thirty"]]},
+    {"question": "When does Northbridge's contract with their current vendor end?", "meeting": "04_sales_discovery", "all": [["june"]]},
+    {"question": "What was the sprint goal for sprint 18?", "meeting": "03_sprint_planning", "all": [["margin"]]},
+    {"question": "Who will investigate the Monday dashboard slowness?", "meeting": "01_client_feedback", "all": [["ankit"]]},
+    {"question": "When will the contract with Anita be signed?", "meeting": "10_short_checkin", "all": [["next week", "wednesday"]]},
+    {"question": "What did we decide about the Singapore office lease?", "meeting": null, "all": []}
+  ]
+}

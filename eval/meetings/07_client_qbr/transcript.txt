@@ -1,0 +1,64 @@
+[00:00:05] Vedant: Welcome everyone to the quarterly business review. From Larkspur Investments we have Helen and Omar, and from our side Priya and me.
+[00:00:16] Helen: Thanks for organising. We have a lot to get through, so let's start with how the quarter went.
+[00:00:24] Priya: Sure. Uptime for the quarter was 99.95 percent. There was one incident, the pricing feed outage in October, which lasted 55 minutes.
+[00:00:38] Helen: We noticed that one. Our traders were not happy, but the incident report was clear and arrived quickly.
+[00:00:48] Priya: Thank you. We've added certificate monitoring so that particular failure can't happen again.
+[00:00:57] Omar: Usage on our side is up as well. We have 42 active users now, up from 30 at the start of the quarter.
+[00:01:08] Vedant: That's great to hear. Which parts of the platform are they using most?
+[00:01:13] Omar: The blotter and the P&L dashboard, by far. The compliance reports are used mostly at month end.
+[00:01:24] Helen: Let me raise the main frustration first. Logging in takes too long in the morning. Sometimes thirty seconds before the dashboard appears.
+[00:01:36] Priya: Is that across all users or a particular office?
+[00:01:40] Omar: Mostly the Dublin office. London seems fine.
+[00:01:45] Priya: That points to the network route. I'll ask our infrastructure team to trace the Dublin connections this week.
+[00:01:55] Helen: Thank you. Second, and this is a request, several of our portfolio managers work late and would really like a dark mode.
+[00:02:06] Omar: The white screens at night are painful, to be honest.
+[00:02:11] Vedant: That's come up with other clients too. I'll log it and share where it sits on the roadmap.
+[00:02:19] Helen: Third, scheduling. Today someone runs the compliance report manually on the last day of the month. We'd like to schedule reports to run and arrive by email automatically.
+[00:02:33] Vedant: So a scheduler for any saved report, delivered by email?
+[00:02:37] Helen: Exactly, any saved report, daily, weekly or monthly.
+[00:02:43] Vedant: Understood, that's a clear request.
+[00:02:47] Omar: And from our security team, they want two-factor login using an authenticator app rather than text messages.
+[00:02:56] Priya: We support text message codes today. Authenticator apps are on the list but not scheduled yet.
+[00:03:04] Omar: Our security team will push hard on that one before the next audit in June.
+[00:03:11] Vedant: Noted. I'll come back with a date for authenticator support by the end of the month.
+[00:03:19] Helen: Good. Now the commercial side. Our contract renews in February.
+[00:03:26] Vedant: Yes. We'd like to propose a two-year renewal at the current rate, with the extra users included.
+[00:03:35] Helen: We discussed this internally. We're happy to renew, and two years works for us.
+[00:03:42] Omar: Provided the rate stays flat as you said.
+[00:03:45] Vedant: It stays flat for both years. So, renewal agreed for two years at the current rate.
+[00:03:53] Helen: Agreed. Our procurement team will need the paperwork by mid-January.
+[00:04:00] Vedant: I'll send the renewal contract to procurement by the 10th of January.
+[00:04:07] Helen: Next, training. We have twelve new users joining and they need the onboarding session.
+[00:04:15] Priya: We had pencilled that in for the 3rd of March.
+[00:04:19] Omar: The 3rd clashes with our quarter-end close. Could it be a week later?
+[00:04:25] Priya: The 10th of March works for our trainers.
+[00:04:29] Helen: Then let's do the 10th of March. Morning, Dublin time.
+[00:04:34] Priya: Done, training moves to the 10th of March, morning. I'll send the invite.
+[00:04:41] Helen: One more thing. We'd like to be closer to your roadmap. Could we have a call each quarter where your product team shows what's coming?
+[00:04:52] Vedant: Yes, we can set up quarterly roadmap calls with our product manager, Sofia.
+[00:04:59] Helen: That would help us plan our own projects.
+[00:05:03] Vedant: I'll ask Sofia to schedule the first one in January.
+[00:05:08] Omar: On the data side, we noticed the end-of-day position file sometimes arrives after 7pm. Our overnight risk run starts at 7.
+[00:05:19] Priya: That's the batch dependency on the settlement system. I'll check the timings and get back to you.
+[00:05:27] Omar: If it's late, our risk numbers are a day stale. It's important.
+[00:05:32] Priya: Understood. I'll have an answer by next Wednesday.
+[00:05:37] Helen: Let me check I have everything. Dublin login speed, dark mode, scheduled reports, authenticator apps, the renewal, training and roadmap calls, and the position file timing.
+[00:05:50] Vedant: That's my list as well. I'll send a written recap tomorrow with owners and dates.
+[00:05:57] Helen: Perfect. One question before we go: is there any plan to support Asian equities? We're starting a Tokyo fund next year.
+[00:06:06] Vedant: Our market data vendor goes live with Tokyo and Hong Kong in May, and we'll integrate shortly after.
+[00:06:14] Helen: That timing could work for us. Keep us posted.
+[00:06:21] Omar: Actually, one more topic from my side if we have five minutes. It's about the compliance reports.
+[00:06:27] Vedant: Of course, go ahead.
+[00:06:29] Omar: The best execution report groups trades by venue, but our compliance officer needs it grouped by broker as well. Today she rebuilds it in a spreadsheet every month.
+[00:06:42] Priya: So the same report with an option to group by broker instead of venue?
+[00:06:46] Omar: Yes, and ideally both levels, broker and then venue underneath.
+[00:06:52] Vedant: I'll add that to the request list next to scheduled reports, since they're related.
+[00:06:58] Helen: And on reporting, the numbers in the monthly compliance pack were correct this time. Last quarter we found two errors, so thank you for fixing those.
+[00:07:09] Priya: Glad to hear it. We added a reconciliation check against the settlement system before the pack is generated.
+[00:07:17] Omar: Good. On the API, our data team is pulling trades every fifteen minutes and occasionally gets rate limited.
+[00:07:26] Priya: The limit is sixty calls a minute per client. Are they paging through results one trade at a time?
+[00:07:33] Omar: I suspect so. I'll check with the data team how they're calling it.
+[00:07:38] Priya: If you send me the client ID they use, I can look at the logs from our side as well.
+[00:07:44] Omar: I'll send it after this call.
+[00:07:47] Helen: That's everything from us. Thanks both, this was useful.
+[00:07:52] Vedant: Thank you, I'll send the recap tomorrow. Talk soon.

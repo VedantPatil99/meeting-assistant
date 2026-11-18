@@ -1,0 +1,69 @@
+[00:00:05] Sofia: Thanks for joining. This is the technical session for connecting our platform to the Eastgate Clearing API. From Eastgate we have Lukas and Mei.
+[00:00:16] Lukas: Hello. I lead the API team, and Mei handles partner onboarding.
+[00:00:22] Sofia: On our side, Kiran is the engineer building the integration, and Vedant manages the client relationship.
+[00:00:30] Lukas: Great. Shall I give a quick overview of the API first?
+[00:00:34] Sofia: Please.
+[00:00:36] Lukas: It's a REST API. Partners submit trades for clearing, then poll the status endpoint until each trade is cleared or rejected.
+[00:00:47] Kiran: How often can we poll?
+[00:00:50] Lukas: The limit is one hundred requests per minute per partner.
+[00:00:55] Kiran: That's going to be tight. At peak our clients submit around two thousand trades an hour, and each one needs several status checks.
+[00:01:06] Mei: Other partners have raised the same issue.
+[00:01:09] Kiran: What we'd really like is a webhook, so Eastgate calls us when a trade's settlement status changes, instead of us polling.
+[00:01:18] Lukas: We don't offer webhooks today. It has been discussed internally.
+[00:01:23] Sofia: For us it's the single most important change. Polling at our volumes isn't sustainable.
+[00:01:30] Lukas: I'll take it to our product board. They meet at the end of the month.
+[00:01:36] Kiran: In the meantime, is there a batch status endpoint, so we can check many trades in one call?
+[00:01:42] Lukas: Yes, the batch endpoint takes up to five hundred trade IDs per request.
+[00:01:48] Kiran: That helps a lot. We'll use the batch endpoint for now.
+[00:01:53] Mei: Let's talk about testing. We provide a sandbox environment for partners.
+[00:01:59] Kiran: We've had a look. The sandbox data is very thin. There are only three instruments and every trade clears instantly.
+[00:02:09] Mei: That's true, it's designed for connectivity testing.
+[00:02:13] Kiran: To test properly we need a sandbox with realistic data: rejections, partial fills, delays, a wider range of instruments.
+[00:02:22] Mei: I understand. We've been asked for a richer sandbox before.
+[00:02:27] Sofia: Could you share a timeline for that?
+[00:02:30] Mei: I can't commit to a date today, but I'll find out who owns it and come back to you by next Friday.
+[00:02:38] Sofia: Thank you.
+[00:02:40] Lukas: Next, authentication. We use mutual TLS plus an API key per partner.
+[00:02:47] Kiran: Mutual TLS is fine. How long are the client certificates valid?
+[00:02:52] Lukas: One year. We email a reminder sixty days before expiry.
+[00:02:58] Kiran: Good, we had an outage recently from an expired certificate, so we'll also add our own monitoring.
+[00:03:05] Lukas: Sensible.
+[00:03:07] Sofia: What does the onboarding process look like, Mei?
+[00:03:11] Mei: Four steps. Legal agreement, connectivity test in the sandbox, a certification run with test scenarios, then production access.
+[00:03:22] Sofia: How long does that take typically?
+[00:03:25] Mei: About six weeks if the legal agreement is quick.
+[00:03:29] Vedant: Our legal team has the agreement already. We should be able to sign within two weeks.
+[00:03:35] Mei: Then you could realistically be in production by mid-March.
+[00:03:40] Sofia: That fits our plan. Our first client wants to clear through Eastgate from April.
+[00:03:47] Lukas: One thing to know: our API version 2 will be retired at the end of June. Please build against version 3.
+[00:03:55] Kiran: We're already building against version 3.
+[00:03:59] Lukas: Perfect.
+[00:04:01] Kiran: A question about error handling. When a trade is rejected, the error codes in the documentation don't always match what the sandbox returns.
+[00:04:11] Lukas: Can you send examples?
+[00:04:13] Kiran: Yes, I'll send you a list of the mismatches by Wednesday.
+[00:04:18] Lukas: Thanks, we'll correct the documentation.
+[00:04:21] Mei: For the certification run, we'll need your test scenarios two weeks in advance.
+[00:04:27] Kiran: Understood. I'll prepare them once the sandbox questions are settled.
+[00:04:32] Sofia: Mei, is there a named support contact for us during onboarding?
+[00:04:36] Mei: Yes, that will be me until you're in production, then our partner support desk.
+[00:04:43] Sofia: Great. And what are the support hours for production?
+[00:04:47] Lukas: Our partner desk is staffed from 7am to 8pm London time on business days, with an on-call engineer outside those hours for severity one issues.
+[00:04:58] Sofia: That's acceptable for our clients.
+[00:05:01] Vedant: On the commercial side, is there a per-trade fee for API access?
+[00:05:06] Mei: No, API access is included in the clearing membership. There's no extra charge.
+[00:05:12] Vedant: Good to know, thank you.
+[00:05:15] Kiran: Last technical point. Do you publish a status page for planned maintenance?
+[00:05:20] Lukas: Yes, on our status website. Maintenance is usually Saturday mornings.
+[00:05:26] Kiran: Could you also notify partners about maintenance through the API itself, for example a maintenance endpoint our system can check?
+[00:05:34] Lukas: That's a good idea. I'll note it alongside the webhook request.
+[00:05:39] Sofia: Let me recap. We'll use the batch endpoint for now. Eastgate takes webhooks and maintenance notifications to the product board. Mei comes back on the richer sandbox by next Friday. Kiran sends the error code mismatches by Wednesday.
+[00:05:56] Mei: And legal signs within two weeks, aiming for production by mid-March.
+[00:06:02] Sofia: Exactly. Thank you both, this was very productive.
+[00:06:06] Lukas: Thank you, speak soon.
+[00:06:09] Kiran: One small follow-up, Lukas. Could you share the rate limit headers you return, so we can back off automatically?
+[00:06:16] Lukas: They're in the documentation under throttling, but I'll send you the direct link after the call.
+[00:06:22] Kiran: Thanks.
+[00:06:24] Mei: Before you go, Sofia, could you send us the list of clients you expect to onboard in the first six months? It helps us plan capacity on our side.
+[00:06:33] Sofia: Yes, I'll send an estimate of clients and daily trade volumes by the end of next week.
+[00:06:40] Mei: Thank you. And please copy me on the legal agreement so I can track it.
+[00:06:45] Vedant: Will do, I'll copy you when it goes to your legal team.

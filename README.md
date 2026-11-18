@@ -32,7 +32,11 @@ An optional `[HH:MM:SS]` at the start ties an anchor to a moment in the meeting.
 ## How the pipeline works
 1. **Summarize** (map-reduce): the transcript is split into chunks small enough for a 7B model,
    facts are extracted from each chunk, then merged into decisions, action items, open questions
-   and key points, each with a timestamp.
+   and key points, each with a timestamp. The meeting type picks a **template** that adds its own
+   sections (`pipeline/templates.py`): updates and blockers for a standup; pain points, budget and
+   decision process for a sales call; root cause and impact for an incident review. The sections
+   become required fields in the JSON schema the model fills, so an empty one means "not
+   discussed" rather than "forgotten".
 2. **Conflict detection:** each fact-stating anchor (`!`, `internal:`, `fr:`) is compared with
    what the meeting *finally* agreed. The result is consistent, contradicts or not mentioned, with
    a quote and timestamp. The model states the facts before it picks a verdict; with the verdict
@@ -93,7 +97,8 @@ outside your company.
 | Page | What it does |
 |---|---|
 | Meeting | Record, take notes, process |
-| Meetings | Every past meeting: summary, full transcript, your notes (internal ones highlighted), search, reprocess with edited notes |
+| Meetings | Every past meeting: summary, full transcript, your notes (internal ones highlighted), search, reprocess with edited notes. **Every timestamp plays the recording from that moment** and highlights the line being played |
+| Ask | Questions across all your meetings ("what did Rahul say about pricing last month?"), answered with the moments they come from |
 | Tasks | Action items become **suggested** tasks with real due dates. Schedule or dismiss them, add your own, mark them done. Tasks due today trigger a tray reminder |
 | Drafts | One follow-up email per suggested person, with the reason they were picked. Edit, copy, put in Gmail Drafts, or send |
 | Feature requests | Every request clients made, most asked first, with who asked, when, and its status |
@@ -134,6 +139,26 @@ candidates, and it counts extra options ("by email or Teams") as the same need b
 core capability as new. The **Feature requests** page lists requests by how often they were
 asked, by which clients and when, with a status (new, planned, in progress, shipped, declined),
 merge and an optional Notion database.
+
+### Ask your meetings
+Each meeting's transcript is cut into short overlapping passages and its summary points are
+added too. A small local embedding model (`nomic-embed-text`, about 270 MB, downloaded from the
+Ask page the first time) turns each passage into a vector that represents its meaning; the
+vectors live in one SQLite file next to your meetings, and only new or changed meetings are
+embedded again. A question is matched by meaning plus a bonus for sharing its exact words, since
+names and terms like "CSV" matter. "Last month", "last week" or "in October" narrow the search to
+those dates, worked out in code like due dates are.
+
+The local model gets the best passages and must quote the lines it uses before it writes the
+answer. Each quote is checked against the passage it cites; if none checks out, the answer is
+"I couldn't find that in your meetings" instead of a guess. Clicking a source opens that meeting
+and plays the recording from that line.
+
+### Playing the recording
+Both tracks are padded against the wall clock, so the same second in each is the same moment.
+`playback.py` reads both from the clicked time, mixes them, and streams them to the speakers
+with PortAudio, the library already used for recording; Qt's media module would have added
+FFmpeg (about 67 MB) back to the build.
 
 ### Gmail (optional)
 Uses your own free Google Cloud OAuth client, so nothing is shared with a third party:
@@ -183,6 +208,78 @@ The **Automations** page lets you build rules from dropdowns. Each rule is one s
 Rules are stored as JSON in a local SQLite database (`assistant.db` in the meetings folder),
 so the editor is a form over data rather than generated code.
 
+## Sharing a test build
+```powershell
+powershell -ExecutionPolicy Bypass -File packaginguild.ps1
+```
+builds `dist\MeetingAssistant\MeetingAssistant.exe` with PyInstaller and zips it (about 90 MB)
+with a "READ ME FIRST" for testers. Testers don't need Python: on first start a setup window
+checks for [Ollama](https://ollama.com) (free; it can't be bundled because it's a separate
+program), links to its installer, and downloads the AI model (a lighter one is offered for
+smaller laptops) and the speech model with progress bars.
+
+- `MeetingAssistant.exe --self-test` loads the speech, audio and credential libraries inside the
+  packaged app and writes `%USERPROFILE%\MeetingAssistant\logs\self-test.txt`.
+- Unexpected errors are written to `logs\crash.log` and shown, so testers can send the file back.
+- The build leaves out PyAV (FFmpeg, 67 MB): recordings are WAV, read by `transcribe.read_wav`.
+  It also drops Qt files a widgets-only English app never loads (software OpenGL, Qt Quick/QML,
+  translations).
+- The build isn't code-signed (that costs money), so Windows SmartScreen asks testers to click
+  **More info > Run anyway** the first time.
+
+## Evaluation
+`eval/` holds 12 scripted meetings (standup, sprint planning, sales discovery, incident review,
+vendor call, pricing negotiation, two long reviews that need the map-reduce merge, and more).
+Each has the notes typed during it and an `expected.json` with the facts the summary must
+contain, who owns each task, which notes the meeting contradicts, and the feature requests,
+plus traps (complaints, bugs and pricing that are not feature requests). It also has 16
+tracker-matching cases and 14 questions across all the meetings, one of which they don't answer.
+Matching is by keywords, so wording doesn't matter.
+
+```bash
+python eval/run_eval.py --label 7b
+python eval/run_eval.py --label split --extract-model qwen2.5:3b
+python eval/run_eval.py --label 7b --ask
+```
+
+Results on an RTX 3060 laptop GPU (6 GB):
+
+| | qwen2.5:7b + fixes | qwen2.5:7b before | 3b reads, 7b checks | qwen2.5:3b |
+|---|---|---|---|---|
+| Key facts in the summary | **35/36 (97%)** | 33/36 (92%) | 25/36 (69%) | 25/36 (69%) |
+| Tasks with the right owner | **18/27 (67%)** | 16/27 (59%) | 11/27 (41%) | 10/27 (37%) |
+| Contradicted notes caught | **6/6** | 6/6 | 6/6 | 5/6 |
+| Conflict flags that were right | 6/10 (60%) | 6/10 | 6/10 | 5/20 (25%) |
+| Feature requests found | 9/14 (64%) | 9/14 | 9/14 | 9/14 |
+| Found requests that were real | **10/10** | 10/10 | 9/10 | 9/11 |
+| Flagged notes in the first draft | 23/31 (74%) | 27/31 (87%) | | |
+| Tracker matches right | 14/16 (88%) | 14/16 | 13/16 | 8/16 (50%) |
+| Seconds per meeting | 67 | 59 | 71 | 39 |
+
+Questions across meetings (7B): **11/14**, including "not found" for the one the meetings
+don't cover. Indexing all 12 meetings took 4.5 s.
+
+What the numbers say:
+- **The 7B model stays the default.** Splitting the work was slower, not faster: both models
+  don't fit in 6 GB of video memory together, so Ollama swaps them on every switch. The 3B model
+  alone is 34% faster but misses far more, and flags twice as many false conflicts.
+- **Speed is mostly the GPU.** The shortest meeting took 108 s when Ollama had silently fallen
+  back to the CPU after the laptop slept, and 18 s once restarting Ollama put it back on the GPU.
+- **Fixes from the first run:** in one meeting the summary repeated the user's contradicted note
+  as fact; a summary line that repeats a contradicted note is now replaced with what the meeting
+  settled on. Blank task owners are now filled from the source line ("I'll ..." gives the speaker,
+  "Ankit will ..." gives Ankit). Facts went from 92% to 97% and owners from 59% to 67%.
+- **The trade-off:** the summary prompt now says the transcript wins over the user's notes, so
+  the first draft repeats notes less (74% vs 87% covered before repair). The repair step makes up
+  the difference, at about 8 s more per meeting; two notes had to be inserted verbatim.
+- **Still weak:** the two tracker misses are synonyms ("night theme" vs "dark mode"), which word
+  overlap can't see, and a third of owners are still missed or wrong.
+- **Ask:** the search found the right meeting for every question; the three misses are the 7B
+  model misreading a passage it was given.
+
+The cases were written for this project and the same set was used while building it, so treat
+the numbers as a regression check, not a benchmark against other tools.
+
 ## Tests
 ```bash
 pytest
@@ -200,4 +297,7 @@ The tests use a fake provider, so they run without Ollama.
 - [x] Follow-up drafts for suggested recipients, internal notes filtered and leak-checked
 - [x] Gmail connector: drafts and send
 - [x] Feature-request detection and deduplication into a tracker
-- [ ] Evaluation set: coverage %, action-item precision/recall, dedup accuracy
+- [x] Evaluation set: 12 scripted meetings, tracker and question cases (`eval/`)
+- [x] Summary templates per meeting type
+- [x] Click a timestamp to hear that moment
+- [x] Ask questions across all meetings, with checked quotes

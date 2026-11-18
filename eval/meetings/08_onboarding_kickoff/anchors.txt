@@ -1,0 +1,3 @@
+! UAT starts 2 February
+[00:00:37] ! Client data migration owner is Tom
+fr: Bloomberg ticker lookup when entering instruments

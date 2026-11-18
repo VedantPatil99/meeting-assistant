@@ -1,0 +1,16 @@
+{
+  "title": "Pricing feed outage review",
+  "type": "incident review",
+  "facts": [
+    {"name": "root cause certificate", "all": [["certificate", "tls", "cert"]]},
+    {"name": "outage 55 minutes", "all": [["55"]]},
+    {"name": "stale prices", "all": [["stale", "four clients", "4 clients"]]}
+  ],
+  "owners": [
+    {"task": [["monitor", "expir", "warn"]], "owner": "Kiran"},
+    {"task": [["runbook"]], "owner": "Leila"},
+    {"task": [["incident report", "report"]], "owner": "Priya"}
+  ],
+  "conflicts": ["Outage lasted 40 minutes"],
+  "features": []
+}

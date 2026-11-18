@@ -1,0 +1,14 @@
+[00:00:03] Meera: Morning all, let's keep it quick. Arjun, you first.
+[00:00:08] Arjun: Yesterday I finished the order amendment screen. Today I'm writing tests for it. No blockers.
+[00:00:21] Meera: Good. Deepa?
+[00:00:24] Deepa: I'm still on the FIX certification with Barclays. Their test environment has been down since Monday, so I'm blocked.
+[00:00:37] Meera: Have you raised it with their support?
+[00:00:41] Deepa: Twice. No reply yet.
+[00:00:45] Meera: I'll escalate it to their account manager today.
+[00:00:52] Kiran: I fixed the blotter freezing when you filter by counterparty. It was a missing index. I'll deploy the fix to staging this afternoon.
+[00:01:06] Meera: Great. Any risk to the release?
+[00:01:10] Kiran: No, it's a small change.
+[00:01:14] Meera: Reminder that we cut release 4.2 on Thursday. Anything not merged by Wednesday evening moves to 4.3.
+[00:01:26] Arjun: The amendment screen will be merged by Wednesday.
+[00:01:31] Deepa: The FIX work won't make it if Barclays stays down.
+[00:01:36] Meera: Then it goes to 4.3. That's fine. Let's wrap up, thanks everyone.

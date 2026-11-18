@@ -1,4 +1,4 @@
 from .base import LLMError, LLMProvider
-from .ollama import OllamaProvider
+from .ollama import OllamaEmbedder, OllamaProvider, extraction_provider
 
-__all__ = ["LLMError", "LLMProvider", "OllamaProvider"]
+__all__ = ["LLMError", "LLMProvider", "OllamaEmbedder", "OllamaProvider", "extraction_provider"]

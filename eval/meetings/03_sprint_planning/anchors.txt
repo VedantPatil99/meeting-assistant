@@ -1,0 +1,4 @@
+ctx: Sofia is the product owner, Meera is the engineering lead
+! Sprint goal is margin calculator v2
+[00:00:47] ! Arjun takes the settlement-date bug
+fr: bulk trade upload from CSV for Hartwell

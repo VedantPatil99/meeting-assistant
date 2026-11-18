@@ -1,0 +1,14 @@
+[00:00:06] Vedant: Thanks for joining, Marco. We wanted to go over the renewal of the market data contract.
+[00:00:13] Marco: Of course. As I mentioned in my email, the list price goes up eight percent from April.
+[00:00:22] Vedant: That's a lot for us. Is there flexibility if we commit for longer?
+[00:00:28] Marco: If you sign for three years I can hold the increase at five percent.
+[00:00:36] Vedant: I'll need to take that back internally.
+[00:00:40] Vedant: On coverage, our clients keep asking for Asian equities. Where is that on your side?
+[00:00:47] Marco: The Asian equities feed goes live in May. Tokyo and Hong Kong first, Singapore later.
+[00:00:57] Vedant: Good. Can you send the field specification so we can plan the integration?
+[00:01:03] Marco: Yes, I'll send it by the end of next week.
+[00:01:08] Vedant: One issue: we had a forty-minute gap in the feed last Tuesday. Was that on your end?
+[00:01:16] Marco: No, our logs show the connection was refused by your gateway.
+[00:01:22] Vedant: That matches what our team found. It was an expired certificate on our side.
+[00:01:29] Marco: Okay. Anything else?
+[00:01:31] Vedant: No. I'll come back to you on the three-year offer within two weeks.

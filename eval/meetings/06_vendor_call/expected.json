@@ -1,0 +1,15 @@
+{
+  "title": "Market data renewal",
+  "type": "vendor call",
+  "facts": [
+    {"name": "8% increase", "all": [["8%", "eight percent", "8 percent"]]},
+    {"name": "Asian equities in May", "all": [["asia"], ["may"]]},
+    {"name": "three-year offer", "all": [["three", "3-year", "3 year"]]}
+  ],
+  "owners": [
+    {"task": [["specification", "spec"]], "owner": "Marco"},
+    {"task": [["three-year", "three year", "3-year", "offer", "come back"]], "owner": "Vedant"}
+  ],
+  "conflicts": [],
+  "features": []
+}

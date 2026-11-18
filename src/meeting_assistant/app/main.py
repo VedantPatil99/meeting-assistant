@@ -7,7 +7,8 @@ Run with:  python -m meeting_assistant.app.main   (or the meeting-assistant-app 
 from __future__ import annotations
 
 import sys
-from datetime import date
+import traceback
+from datetime import date, datetime
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, QUrl, Signal
@@ -22,9 +23,9 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
     QMainWindow,
     QMenu,
+    QMessageBox,
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
@@ -42,7 +43,7 @@ from ..anchors import parse_anchors
 from ..automations import Engine, Prefs, Store, events_from_report
 from ..config import Settings
 from ..gmail import GmailConnection
-from ..llm import LLMError, OllamaProvider
+from ..llm import LLMError, OllamaProvider, extraction_provider
 from ..models import format_ts
 from ..pipeline import process_meeting
 from ..pipeline.features import link_to_tracker
@@ -53,8 +54,10 @@ from ..transcript import parse_transcript
 from ..notion.connection import NotionConnection
 from .automations_page import AutomationsPage
 from .drafts_page import DraftsPage
+from .first_run import SetupDialog, needs_setup, with_saved_model
 from .features_page import FeaturesPage
 from .gmail_settings import GmailSettings
+from .ask_page import AskPage
 from .library_page import LibraryPage
 from .notion_settings import NotionSettings
 from .hotkeys import MOD_CONTROL, MOD_SHIFT, VK_SPACE, HotkeyThread
@@ -63,10 +66,11 @@ from .quick_anchor import QuickAnchor, mark_internal
 from .sidebar import Sidebar
 from .tasks_page import TasksPage
 
-MEETING_TYPES = ["client feedback", "general", "standup", "sprint planning", "1:1"]
-NAV = ["Meeting", "Meetings", "Tasks", "Drafts", "Feature requests", "Automations", "Settings"]
-NAV_ICONS = ["\uE720", "\uE8F1", "\uE9D5", "\uE715", "\uE82F", "\uE945", "\uE713"]
-NAV_TASKS, NAV_DRAFTS, NAV_FEATURES, NAV_AUTOMATIONS = 2, 3, 4, 5
+MEETING_TYPES = ["client feedback", "general", "standup", "sprint planning", "sales call", "interview",
+                 "incident review", "1:1"]
+NAV = ["Meeting", "Meetings", "Ask", "Tasks", "Drafts", "Feature requests", "Automations", "Settings"]
+NAV_ICONS = ["\uE720", "\uE8F1", "\uE721", "\uE9D5", "\uE715", "\uE82F", "\uE945", "\uE713"]
+NAV_TASKS, NAV_DRAFTS, NAV_FEATURES, NAV_AUTOMATIONS = 3, 4, 5, 6
 HOTKEY_NOTE = 1
 HOTKEY_LABEL = "Ctrl+Shift+Space"
 
@@ -134,6 +138,7 @@ class ProcessWorker(QObject):
                 title=self.title,
                 meeting_type=self.meeting_type,
                 on_progress=self.progress.emit,
+                extract_provider=extraction_provider(self.settings),
             )
         except (LLMError, OSError, RuntimeError) as e:
             self.failed.emit(str(e))
@@ -456,10 +461,13 @@ class SettingsPage(QWidget):
         self.model_status = theme.label("", "muted")
         check = QPushButton("Check AI model")
         check.clicked.connect(self.check_model)
+        setup = QPushButton("Set up models…")
+        setup.clicked.connect(self.open_setup)
         open_folder = QPushButton("Open meetings folder")
         open_folder.clicked.connect(self.open_meetings)
         buttons = QHBoxLayout()
         buttons.addWidget(check)
+        buttons.addWidget(setup)
         buttons.addWidget(open_folder)
         buttons.addStretch()
         note = theme.muted("Change these in a .env file next to the app (see .env.example).")
@@ -498,20 +506,26 @@ class SettingsPage(QWidget):
             else f"Ollama isn't running or {self.settings.ollama_model} isn't installed."
         )
 
+    def open_setup(self) -> None:
+        dialog = SetupDialog(self.settings, self.store, self)
+        dialog.exec()
+        if dialog.chosen_model != self.settings.ollama_model and self.store.get_pref("ollama_model") == dialog.chosen_model:
+            self.model_status.setText(f"Restart the app to switch to {dialog.chosen_model}.")
+
     def open_meetings(self) -> None:
         self.settings.meetings_dir.mkdir(parents=True, exist_ok=True)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.settings.meetings_dir)))
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, store: Store | None = None):
         super().__init__()
         self.setWindowTitle("Meeting Assistant")
         self.resize(1240, 780)
         self.idle_icon, self.recording_icon = dot_icon("#9e9e9e"), dot_icon("#e53935")
         self.setWindowIcon(self.idle_icon)
 
-        self.store = Store(settings.meetings_dir / "assistant.db")
+        self.store = store or Store(settings.meetings_dir / "assistant.db")
         theme.apply(QApplication.instance(), self.store.get_pref("theme") or "system")
         self.notion = NotionConnection(self.store)
         self.engine = Engine(self.store, settings.meetings_dir / "outputs", notifier=self.notify,
@@ -524,6 +538,8 @@ class MainWindow(QMainWindow):
         self.meeting.processed.connect(self._after_meeting)
         self.library = LibraryPage(settings.meetings_dir)
         self.library.reopen.connect(self._reopen_meeting)
+        self.ask_page = AskPage(settings)
+        self.ask_page.open_source.connect(self._open_source)
         self.tasks = TasksPage(self.store, self.notion)
         self.tasks.counts_changed.connect(lambda n: self._badge(NAV_TASKS, n))
         self.drafts = DraftsPage(self.store, self.gmail)
@@ -535,7 +551,7 @@ class MainWindow(QMainWindow):
         self.settings_page = SettingsPage(settings, self.store, self.notion, self.gmail)
         self.settings_page.gmail.changed.connect(self.drafts.refresh)
         self.pages = QStackedWidget()
-        for page in (self.meeting, self.library, self.tasks, self.drafts, self.features, self.automations,
+        for page in (self.meeting, self.library, self.ask_page, self.tasks, self.drafts, self.features, self.automations,
                      self.settings_page):
             self.pages.addWidget(page)
 
@@ -600,6 +616,13 @@ class MainWindow(QMainWindow):
         for page in (self.automations, self.tasks, self.drafts, self.features):
             page.refresh()
         self.library.refresh(select=folder)
+
+    def _open_source(self, folder: str, seconds) -> None:
+        """An answer's source: open that meeting and play the recording from that moment."""
+        self.nav.setCurrentRow(NAV.index("Meetings"))
+        self.library.refresh(select=Path(folder))
+        if seconds is not None:
+            self.library.seek(QUrl(f"seek:{int(seconds)}"))
 
     def _reopen_meeting(self, session) -> None:
         self.meeting.load_session(session)
@@ -676,13 +699,40 @@ class MainWindow(QMainWindow):
         if self.meeting.is_recording:
             self.meeting.stop_recording()
         self.hotkeys.stop()
+        self.library.player.shutdown()
         QApplication.quit()
+
+
+def install_crash_log(folder: Path) -> None:
+    """The packaged app has no console, so an unexpected error is written to a file (which a
+    tester can send back) and shown, instead of the window silently closing."""
+
+    def handle(kind, error, tb) -> None:
+        folder.mkdir(parents=True, exist_ok=True)
+        log = folder / "crash.log"
+        with log.open("a", encoding="utf-8") as f:
+            f.write(f"\n--- {datetime.now().isoformat(timespec='seconds')}\n")
+            f.write("".join(traceback.format_exception(kind, error, tb)))
+        QMessageBox.critical(None, "Meeting Assistant hit an error",
+                             f"{error}\n\nDetails were saved to {log}. Please send that file to whoever "
+                             "shared the app with you.")
+
+    sys.excepthook = handle
 
 
 def main() -> int:
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    window = MainWindow(Settings.from_env())
+    settings = Settings.from_env()
+    install_crash_log(settings.meetings_dir / "logs")
+    store = Store(settings.meetings_dir / "assistant.db")
+    theme.apply(app, store.get_pref("theme") or "system")
+    settings = with_saved_model(settings, store)
+    if needs_setup(settings):
+        dialog = SetupDialog(settings, store)
+        dialog.exec()
+        settings = with_saved_model(settings, store)
+    window = MainWindow(settings, store)
     window.show()
     return app.exec()
 

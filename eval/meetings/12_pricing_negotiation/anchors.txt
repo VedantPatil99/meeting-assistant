@@ -1,0 +1,3 @@
+[00:00:10] ! Client accepted a 10% discount
+! Billing quarterly, no fee
+internal: our floor is 15% discount for a three-year deal

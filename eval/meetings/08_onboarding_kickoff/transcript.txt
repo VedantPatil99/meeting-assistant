@@ -1,0 +1,19 @@
+[00:00:04] Vedant: Welcome to the implementation kickoff. From Fenwick Partners we have Tom and Grace. From our side, Arjun is your implementation engineer.
+[00:00:15] Tom: Thanks. We're keen to get going. Our target is to be live before the summer.
+[00:00:22] Vedant: Let's walk through the plan. Phase one is data migration, phase two is user acceptance testing, then go-live.
+[00:00:32] Grace: Who owns migration on our side? I assumed it would be me.
+[00:00:37] Tom: No, I'll own the data migration. Grace will lead UAT.
+[00:00:43] Vedant: Clear. Tom, the first step is a sample extract of your trades and positions.
+[00:00:50] Tom: I can send a sample file by Friday.
+[00:00:54] Arjun: Please include at least a month of trades, including any cancelled and amended ones.
+[00:01:02] Tom: Will do.
+[00:01:04] Vedant: For UAT, we were thinking of starting on the 2nd of February.
+[00:01:10] Grace: That works. I'll need ten testers and a test script from you.
+[00:01:16] Arjun: I'll set up the UAT environment by the end of January and share the test scripts a week before.
+[00:01:24] Grace: One thing our traders use constantly in the old system: they paste Bloomberg tickers and the instrument fills in automatically. Can you do that?
+[00:01:35] Arjun: Not today. We look up by ISIN or our own instrument code.
+[00:01:41] Grace: That will be a sticking point. Can it be added?
+[00:01:44] Vedant: I'll take it to our product team as a request and come back to you before UAT.
+[00:01:51] Tom: Last thing, we'll need single sign-on, but we already use Okta so it should be standard.
+[00:01:58] Arjun: Okta is supported out of the box. I'll send you the setup guide today.
+[00:02:04] Vedant: Great, I'll send a project plan with all these dates tomorrow.

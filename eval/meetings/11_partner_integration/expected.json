@@ -1,0 +1,20 @@
+{
+  "title": "Eastgate API integration",
+  "type": "partner integration",
+  "facts": [
+    {"name": "mid-March production", "all": [["march"]]},
+    {"name": "v2 retired June", "all": [["june"]]},
+    {"name": "batch endpoint", "all": [["batch"]]},
+    {"name": "rate limit 100/min", "all": [["100", "hundred", "rate limit"]]}
+  ],
+  "owners": [
+    {"task": [["error code", "mismatch"]], "owner": "Kiran"},
+    {"task": [["sandbox"]], "owner": "Mei"}
+  ],
+  "conflicts": [],
+  "features": [
+    {"name": "settlement status webhook", "all": [["webhook"]]},
+    {"name": "realistic sandbox", "all": [["sandbox"]]},
+    {"name": "maintenance notification endpoint", "all": [["maintenance"]]}
+  ]
+}

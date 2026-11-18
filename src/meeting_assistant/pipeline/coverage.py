@@ -17,6 +17,9 @@ from ..llm import LLMProvider
 from ..models import (
     ActionItem,
     Anchor,
+    AnchorKind,
+    ConflictResult,
+    ConflictVerdict,
     CoverageResult,
     CoverageStatus,
     Point,
@@ -63,6 +66,39 @@ def add_point(summary: Summary, point: RepairedPoint) -> None:
         )
     else:
         getattr(summary, point.section).append(Point(text=point.text, timestamp=point.timestamp))
+
+
+def _replace_line(summary: Summary, line: str, text: str, timestamp: str | None) -> bool:
+    """Swap the summary item whose text is `line` for `text`. False if no item has that text."""
+    for points in (summary.decisions, summary.open_questions, summary.key_points, *summary.sections.values()):
+        for i, p in enumerate(points):
+            if p.text == line:
+                points[i] = Point(text=text, timestamp=timestamp or p.timestamp)
+                return True
+    for i, a in enumerate(summary.action_items):
+        if a.task == line:  # the owner or date was the wrong part, so neither is kept
+            summary.action_items[i] = ActionItem(task=text, timestamp=timestamp or a.timestamp)
+            return True
+    return False
+
+
+def correct_contradicted(provider: LLMProvider, summary: Summary, anchors: list[Anchor],
+                         conflicts: list[ConflictResult]) -> None:
+    """The summary prompt includes the user's flagged notes, so a note the meeting contradicted can
+    end up in the summary as fact ("outage lasted 40 minutes" when the meeting said 55). For each
+    contradicted note: a summary line that repeats it is replaced with what the meeting settled on;
+    if no line repeats it, the meeting's version is added when the summary lacks it. Either way the
+    summary only gains text the transcript supports, even if the conflict was flagged wrongly."""
+    by_id = {a.id: a for a in anchors}
+    for c in conflicts:
+        if c.verdict != ConflictVerdict.CONTRADICTS or not c.transcript_final or c.anchor_id not in by_id:
+            continue
+        line = check_anchor(provider, by_id[c.anchor_id], summary)
+        if line and _replace_line(summary, line, c.transcript_final, c.timestamp):
+            continue
+        final = Anchor(id=0, kind=AnchorKind.MUST, text=c.transcript_final)
+        if not check_anchor(provider, final, summary):
+            summary.key_points.append(Point(text=c.transcript_final, timestamp=c.timestamp))
 
 
 def ensure_coverage(

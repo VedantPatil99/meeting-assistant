@@ -1,0 +1,13 @@
+{
+  "title": "Contract check-in",
+  "type": "check-in",
+  "facts": [
+    {"name": "signing next week", "all": [["next week", "wednesday"]]},
+    {"name": "retention seven years", "all": [["seven", "7"], ["retention", "year"]]}
+  ],
+  "owners": [
+    {"task": [["clause"]], "owner": "Vedant"}
+  ],
+  "conflicts": [],
+  "features": []
+}

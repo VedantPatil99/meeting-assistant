@@ -1,0 +1,7 @@
+[00:00:03] Vedant: Hi Anita, just a quick check-in on the contract.
+[00:00:07] Anita: Hi. Our legal team needs a few more days, so signing moves to next week.
+[00:00:14] Vedant: No problem. Is anything in the contract blocking them?
+[00:00:18] Anita: Just the data retention clause. They want seven years instead of five.
+[00:00:25] Vedant: Seven years is fine for us. I'll send an updated clause today.
+[00:00:31] Anita: Great, then we should be able to sign on Wednesday.
+[00:00:35] Vedant: Perfect. Talk then.

@@ -1,0 +1,17 @@
+{
+  "title": "Sprint 18 planning",
+  "type": "sprint planning",
+  "facts": [
+    {"name": "sprint goal", "all": [["margin calculator"]]},
+    {"name": "Meera takes settlement bug", "all": [["settlement"], ["meera"]]}
+  ],
+  "owners": [
+    {"task": [["haircut"]], "owner": "Arjun"},
+    {"task": [["settlement", "holiday"]], "owner": "Meera"},
+    {"task": [["scenario file", "leila", "scenario"]], "owner": "Kiran"}
+  ],
+  "conflicts": ["Arjun takes the settlement-date bug"],
+  "features": [
+    {"name": "bulk CSV trade upload", "all": [["bulk", "csv", "upload"]]}
+  ]
+}

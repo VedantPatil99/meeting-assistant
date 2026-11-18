@@ -21,7 +21,9 @@ def anchor_context(anchors: list[Anchor]) -> str:
         )
     if flagged:
         parts.append(
-            "Points the user flagged as important (include each one if it is discussed):\n"
+            "Points the user flagged as important. Include each one if it is discussed, but the "
+            "transcript wins: if the meeting says something different (another date, number or "
+            "owner), write what the meeting says, not the note:\n"
             + "\n".join(f"- {t}" for t in flagged)
         )
     return "\n\n".join(parts)
@@ -36,7 +38,9 @@ Transcript part {part} of {total}:
 
 Extract from THIS part only:
 - decisions: things agreed or decided
-- action_items: tasks with owner and due date if stated
+- action_items: every task someone agreed or offered to do, including ones mentioned in updates.
+  owner: the person who will do it, by name; when the speaker says "I'll" or "I will", the owner
+  is that speaker. due: the due date as said, if any
 - open_questions: unresolved questions
 - key_points: other important discussion points
 Copy the [HH:MM:SS] timestamp of the line each item comes from into "timestamp"."""

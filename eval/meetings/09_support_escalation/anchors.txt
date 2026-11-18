@@ -1,0 +1,3 @@
+! Missing confirmations affect around 30 trades a day
+[00:00:48] ! Fix promised by end of this week
+internal: Helen is under pressure from her boss, keep her updated proactively

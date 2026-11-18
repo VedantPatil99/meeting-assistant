@@ -1,0 +1,16 @@
+[00:00:05] Vedant: Thanks for taking the call, Sanjay. Could you start with how your desk handles trade capture today?
+[00:00:13] Sanjay: Sure. We're a mid-size fixed income desk at Northbridge Capital. Today it's our current vendor plus a lot of spreadsheets.
+[00:00:26] Vedant: What's driving the search for something new?
+[00:00:30] Sanjay: Two things. Our contract with the current vendor ends in June, and our traders hate re-keying trades between systems.
+[00:00:44] Vedant: Understood. Who else is involved in the decision?
+[00:00:48] Sanjay: Me, our COO Anita, and IT security has a veto. We want to decide by the end of the first quarter.
+[00:01:02] Vedant: What would security need from us?
+[00:01:06] Sanjay: They'll insist on single sign-on with Azure AD. Nobody gets another password.
+[00:01:16] Vedant: Okay. Anything else on the must-have list?
+[00:01:20] Sanjay: An API so our risk system can pull positions every few minutes. Right now someone exports a file every hour.
+[00:01:34] Vedant: Makes sense. And on budget, do you have a range in mind?
+[00:01:39] Sanjay: Honestly the budget isn't approved yet. Anita will set it after she sees options.
+[00:01:50] Vedant: Fair enough. I'll send you our security questionnaire answers and an architecture overview by Friday.
+[00:02:00] Sanjay: Great. I'll share a document describing our current workflow so you can see the pain points.
+[00:02:10] Vedant: Perfect. Shall we plan a demo for Anita in two weeks?
+[00:02:15] Sanjay: Yes, let's aim for that.

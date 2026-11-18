@@ -11,10 +11,23 @@ STOPWORDS = {"the", "and", "for", "with", "that", "this", "from", "have", "will"
              "when", "would", "could", "should", "like", "want", "need", "able", "into", "some", "more"}
 
 
+def _word(token: str) -> str | None:
+    """The comparable form of one token, or None to skip it. Short words are mostly filler
+    ("to", "as", "via"), but short all-caps terms carry the meaning: "Export to CSV" and
+    "Export to PDF" are different requests."""
+    acronym = token[:-1] if token.endswith("s") and token[:-1].isupper() else token  # "APIs" -> "API"
+    if len(acronym) >= 2 and acronym.isupper():
+        return acronym.lower()
+    word = token.lower()
+    if len(word) <= 3 or word in STOPWORDS:
+        return None
+    return word[:-1] if word.endswith("s") and not word.endswith("ss") else word
+
+
 def content_words(text: str) -> list[str]:
-    """Lower-case words longer than 3 letters, minus common words, with a plural "s" removed."""
-    words = [w for w in re.findall(r"[a-z0-9']+", text.lower()) if len(w) > 3 and w not in STOPWORDS]
-    return [w[:-1] if w.endswith("s") and not w.endswith("ss") else w for w in words]
+    """Lower-case words longer than 3 letters plus short all-caps terms (CSV, SSO, Q4), minus
+    common words, with a plural "s" removed."""
+    return [w for w in map(_word, re.findall(r"[A-Za-z0-9']+", text)) if w]
 
 
 def similarity(a: str, b: str) -> float:

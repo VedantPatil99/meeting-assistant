@@ -1,0 +1,5 @@
+ctx: Sanjay runs the fixed income desk, Anita is the COO and signs off
+! Decision by end of Q1
+! Current vendor contract ends in June
+internal: budget not approved, could be small, qualify early
+fr: SSO with Azure AD

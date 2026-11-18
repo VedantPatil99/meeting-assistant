@@ -1,0 +1,7 @@
+ctx: Helen is head of operations at Larkspur, Omar runs their IT
+[00:03:45] ! Renewal agreed for two years at current rate
+[00:04:41] ! Client wants quarterly roadmap calls
+[00:04:15] ! Training session set for 3 March
+internal: renewal flat rate is below our target margin, check with finance
+fr: dark mode
+fr: schedule reports to be emailed automatically

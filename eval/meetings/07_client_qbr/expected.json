@@ -1,0 +1,134 @@
+{
+  "title": "Larkspur quarterly review",
+  "type": "client review",
+  "facts": [
+    {
+      "name": "two-year renewal",
+      "all": [
+        [
+          "renew"
+        ],
+        [
+          "two year",
+          "two-year",
+          "2 year",
+          "2-year"
+        ]
+      ]
+    },
+    {
+      "name": "quarterly roadmap calls",
+      "all": [
+        [
+          "roadmap"
+        ]
+      ]
+    },
+    {
+      "name": "training 10 March",
+      "all": [
+        [
+          "10 march",
+          "march 10",
+          "10th of march",
+          "10th march"
+        ]
+      ]
+    },
+    {
+      "name": "Dublin login slow",
+      "all": [
+        [
+          "dublin",
+          "login",
+          "log in"
+        ]
+      ]
+    },
+    {
+      "name": "position file late",
+      "all": [
+        [
+          "position file",
+          "end-of-day",
+          "end of day",
+          "7pm",
+          "7 pm"
+        ]
+      ]
+    }
+  ],
+  "owners": [
+    {
+      "task": [
+        [
+          "dublin",
+          "network",
+          "trace"
+        ]
+      ],
+      "owner": "Priya"
+    },
+    {
+      "task": [
+        [
+          "renewal contract",
+          "contract",
+          "paperwork"
+        ]
+      ],
+      "owner": "Vedant"
+    },
+    {
+      "task": [
+        [
+          "position file",
+          "timing",
+          "batch",
+          "settlement"
+        ]
+      ],
+      "owner": "Priya"
+    }
+  ],
+  "conflicts": [
+    "Training session set for 3 March"
+  ],
+  "features": [
+    {
+      "name": "dark mode",
+      "all": [
+        [
+          "dark"
+        ]
+      ]
+    },
+    {
+      "name": "scheduled reports",
+      "all": [
+        [
+          "schedul"
+        ]
+      ]
+    },
+    {
+      "name": "authenticator 2FA",
+      "all": [
+        [
+          "authenticator",
+          "two-factor",
+          "2fa",
+          "two factor"
+        ]
+      ]
+    },
+    {
+      "name": "group report by broker",
+      "all": [
+        [
+          "broker"
+        ]
+      ]
+    }
+  ]
+}

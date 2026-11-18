@@ -1,0 +1,18 @@
+{
+  "title": "Northbridge discovery call",
+  "type": "sales discovery",
+  "facts": [
+    {"name": "decision by end of Q1", "all": [["q1", "first quarter"]]},
+    {"name": "contract ends June", "all": [["june"]]},
+    {"name": "budget not approved", "all": [["budget"]]}
+  ],
+  "owners": [
+    {"task": [["security", "questionnaire", "architecture"]], "owner": "Vedant"},
+    {"task": [["workflow"]], "owner": "Sanjay"}
+  ],
+  "conflicts": [],
+  "features": [
+    {"name": "SSO with Azure AD", "all": [["sso", "single sign", "azure"]]},
+    {"name": "positions API", "all": [["api"]]}
+  ]
+}

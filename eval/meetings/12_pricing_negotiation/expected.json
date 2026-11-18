@@ -1,0 +1,14 @@
+{
+  "title": "Licence pricing negotiation",
+  "type": "pricing negotiation",
+  "facts": [
+    {"name": "12% for two years", "all": [["12", "twelve"]]},
+    {"name": "quarterly billing", "all": [["quarter"]]}
+  ],
+  "owners": [
+    {"task": [["order form"]], "owner": "Vedant"},
+    {"task": [["sign-off", "sign off", "approv"]], "owner": "Anita"}
+  ],
+  "conflicts": ["Client accepted a 10% discount"],
+  "features": []
+}

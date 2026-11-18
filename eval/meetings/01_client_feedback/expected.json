@@ -1,0 +1,18 @@
+{
+  "title": "Dashboard pilot feedback",
+  "type": "client feedback",
+  "facts": [
+    {"name": "Monday slowness", "all": [["monday"], ["slow", "load", "speed", "performance", "minute"]]},
+    {"name": "go-live is 20 December", "all": [["20 dec", "december 20", "20th dec"]]},
+    {"name": "licence cost concern", "all": [["licen"], ["cost", "pric"]]}
+  ],
+  "owners": [
+    {"task": [["licen"], ["breakdown", "detail", "send"]], "owner": "Vedant"},
+    {"task": [["monday", "performance", "slow"]], "owner": "Ankit"}
+  ],
+  "conflicts": ["Go-live confirmed for 15 December"],
+  "features": [
+    {"name": "Excel export", "all": [["excel"]]},
+    {"name": "trade failure alerts", "all": [["alert", "notif"], ["fail"]]}
+  ]
+}

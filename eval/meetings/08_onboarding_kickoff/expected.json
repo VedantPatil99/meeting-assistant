@@ -1,0 +1,18 @@
+{
+  "title": "Fenwick implementation kickoff",
+  "type": "implementation kickoff",
+  "facts": [
+    {"name": "UAT starts 2 Feb", "all": [["uat", "acceptance"], ["2 feb", "february 2", "2nd of feb", "2nd feb"]]},
+    {"name": "Tom owns migration", "all": [["tom"], ["migrat"]]},
+    {"name": "Grace leads UAT", "all": [["grace"]]}
+  ],
+  "owners": [
+    {"task": [["sample"]], "owner": "Tom"},
+    {"task": [["uat environment", "environment", "test script"]], "owner": "Arjun"},
+    {"task": [["okta", "setup guide", "sso"]], "owner": "Arjun"}
+  ],
+  "conflicts": [],
+  "features": [
+    {"name": "Bloomberg ticker lookup", "all": [["bloomberg", "ticker"]]}
+  ]
+}
